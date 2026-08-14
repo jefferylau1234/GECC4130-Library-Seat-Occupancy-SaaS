@@ -14,16 +14,19 @@ router = APIRouter(prefix = "/api")
 
 # cookie
 class PreferenceIn(BaseModel):
-    study_preference: str
+    purpose: str
     preferred_floor: str
-
+    temporature: str
+    noise: str
+    humidity: str
+    take: str
 
 
 @router.post("/preferences")
 def save_preferences(data: PreferenceIn, response: Response):
     # can save to database for building recommended zone model (db.save(data.model_dump())
 
-    cookie_value = f"{data.study_preference}|{data.preferred_floor} "
+    cookie_value = f"{data.purpose}|{data.preferred_floor}|{data.temporature}|{data.noise}|{data.humidity}|{data.take}"
 
     print(cookie_value)
 
@@ -41,8 +44,12 @@ def save_preferences(data: PreferenceIn, response: Response):
         "status": "ok",
         "saved": True,
         "preference": {
-            "study_preference": data.study_preference,
-            "preferred_floor": data.preferred_floor
+            "purpose": data.purpose,
+            "preferred_floor": data.preferred_floor,
+            "temporature": data.temporature,
+            "noise": data.noise,
+            "humidity": data.humidity,
+            "take": data.take
         }
     }
 
@@ -252,7 +259,7 @@ def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str |
 # headers: {x-sensor-key: ABCDEFG12345}
 # body:
 # {
-#   "zone": "2F_study1" or "1F_hub3" or "G_pc2",
+#   "zone": "2F_study1" or "1F_hub3" or "G_pc8",
 #   "temperature_c": 25,
 #   "humidity": 0.79,
 #   "noise_db": 30,

@@ -156,31 +156,67 @@
     <div class="preference-dialog">
         <button class="modal-close" id="closePreferenceModal" aria-label="Close">×</button>
 
-        <h2 class="preference-title">Welcome to CC Library Analytics Dashboard</h2>
-        <p class="preference-subtitle">Tell us your study preferences first.</p>
+        <h2 class="preference-title">Welcome to CC Library Analytics Dashboard 👋</h2>
+        <p class="preference-subtitle">Tell us your study preferences first 🎯</p>
+
 
         <div class="preference-group">
-        <label for="studyPreference">Study preference</label>
-        <select id="studyPreference">
-            <option value="quiet">Quiet zone</option>
-            <option value="low-crowd">Less crowded area</option>
-            <option value="cooler">Cooler area</option>
+        <label for="purpose">💡 Purpose</label>
+        <select id="purpose">
+            <option value="chilling">😌 Chilling</option>
+            <option value="self_learning">📖 Self-study</option>
+            <option value="computing">💻 Computer work</option>
+            <option value="reading_books">📚 Reading</option>
+            <option value="online_meeting">🎧 Online meeting</option>
+            <option value="group_study">👥 Group study</option>
         </select>
         </div>
 
+
         <div class="preference-group">
-        <label for="preferredFloor">Preferred floor</label>
+        <label for="preferredFloor">🏠 Preferred floor</label>
         <select id="preferredFloor">
-            <option value="second">2F</option>
-            <option value="first">1F</option>
-            <option value="ground">G</option>
-            <option value="lower_ground">LG</option>
+            <option value="idc">I don’t mind 🤷</option>
+            <option value="second">2️⃣ 2F</option>
+            <option value="first">1️⃣ 1F</option>
+            <option value="ground">🚪 G</option>
         </select>
         </div>
+
+        <hr>
+
+
+        <div class="preference-group">
+        <label for="environment">🌤️ Study environment</label>
+        <select id="temporature">
+            <option value="cooler">❄️ Cooler</option>
+            <option value="warmer">☀️ Warmer</option>
+            <option value="idc">I don’t mind 🤷</option>
+        </select>
+
+        <select id="noise">
+            <option value="quiet">🤫 Quiet </option>
+            <option value="lively">💬 Lively</option>
+            <option value="idc">I don’t mind 🤷</option>
+        </select>
+
+        <select id="humidity">
+            <option value="dryer">🏜️ Drier</option>
+            <option value="wetter">💦 More humid</option>
+            <option value="idc">I don’t mind 🤷</option>
+        </select>
+
+
+
+        </div>
+
+
+
+
 
         <div class="preference-group checkbox-row">
-        <input type="checkbox" id="receiveTips">
-        <label for="receiveTips">Show me study recommendations</label>
+        <input type="checkbox" id="receiveTips" checked>
+        <label for="receiveTips">🧭 Take me to my recommended zone</label>
         </div>
 
         <div class="preference-actions">

@@ -62,7 +62,7 @@ export const floors = {
         top: "12%",
         width: "8.35%",
         height: "5.75%",
-        recommended: true,
+        recommended: false,
         stats: {
           noise: ` ` , 
           temperature: ` `,

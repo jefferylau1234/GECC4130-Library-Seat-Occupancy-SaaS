@@ -12,10 +12,12 @@ const API_BASE = "";      // backend api local url http://127.0.0.1:8000
 
 
 
-async function renderFloor(floorKey) {
-  const floor = floors[floorKey];
+async function renderFloor(floorkey) {
+  clearMapBeforeRender();
+  const floor = floors[floorkey];
   floorImage.src = floor.image;
-
+  floorImage.alt = `${floor.overview.name} floor map`;
+  
   mapWrapper.querySelectorAll(".map-zone").forEach(el => el.remove());
 
 
@@ -101,14 +103,35 @@ try{
 
 
 
-
-
-
 renderFloor("ground");
 document.getElementById("floorSelect").addEventListener("change", (event)=>{
     const selectedValue = event.target.value;
     renderFloor(selectedValue);
 });
+
+
+
+const floorImage1 = document.getElementById("floorImage");
+
+const floorSelect =
+  document.getElementById("floorSelect");
+
+function clearMapBeforeRender() {
+  // Remove old zone buttons
+  mapWrapper
+    .querySelectorAll(".map-zone")
+    .forEach((element) => {
+      element.remove();
+    });
+
+  // Clear old image
+  floorImage.removeAttribute("src");
+  floorImage.removeAttribute("alt");
+
+  // Clear old overview
+  floorInfo.replaceChildren();
+}
+
 
 
 
@@ -162,7 +185,7 @@ async function loadDashboard(){
 }
 
 
-const timeID = setInterval(loadDashboard, 10000);   // 10 seconds, 1 update
+// const timeID = setInterval(loadDashboard, 10000);   // 10 seconds, 1 update
 
 
 
@@ -715,6 +738,7 @@ function setCookie(name, value, days = 180) {
                      path=/; 
                      max-age=${maxAge}; 
                      samesite=lax`;
+  console.log(document.cookie);
 }
 
 
@@ -745,13 +769,11 @@ function parsePreferenceCookie() {
   const raw = getCookie("cc_pref");
   if (!raw) return null;
 
-  const [study_preference, preferred_floor] = raw.split("|");
-  if (!study_preference || !preferred_floor) return null;
+  const [purpose, preferred_floor, temporature, noise, humidity, take] = raw.split("|");
+  if (!purpose || !preferred_floor || !temporature || !noise || !humidity ) return null;
 
-  return { study_preference, preferred_floor };
+  return { purpose, preferred_floor, temporature, noise, humidity, take };
 }
-
-
 
 
 // asking for preference
@@ -768,21 +790,497 @@ close.addEventListener("click", closeModal);
 
 document.getElementById("editPreferenceBtn").addEventListener("click", showModal);
 
-document.addEventListener("DOMContentLoaded", () => {      // checking cookie before showing after loading
-    const savedPref = parsePreferenceCookie();
-    if (savedPref) {closeModal();} else {showModal();}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+async function loadAllZoneEnvironment() {
+  const response = await fetch(
+    `${API_BASE}/env/environmental-data/all`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to load all environmental data: ${response.status}`
+    );
+  }
+
+  const result = await response.json();
+
+  const environmentByZoneId = new Map();
+
+  result.data.forEach((row) => {
+    environmentByZoneId.set(row.zone_id, {
+      temperature: Number(row.temperature_c),
+      noise: Number(row.noise_db),
+      humidity: Number(row.humidity_percent),
+      zoneType: row.zone_type,
+      lastUpdated: row.last_updated,
+    });
+  });
+
+  return environmentByZoneId;
+}
+
+async function attachEnvironmentToZones() {
+  const environmentByZoneId =
+    await loadAllZoneEnvironment();
+
+  Object.values(floors).forEach((floor) => {
+    floor.zones.forEach((zone) => {
+      const environment =
+        environmentByZoneId.get(zone.id);
+
+      if (!environment) {
+        console.warn(
+          `No environmental data found for zone: ${zone.id}`
+        );
+
+        return;
+      }
+
+      zone.stats = {
+        temperature: environment.temperature,
+        noise: environment.noise,
+        humidity: environment.humidity,
+      };
+
+      zone.lastUpdated =
+        environment.lastUpdated;
+    });
+  });
+}
+
+async function prepareRecommendation() {
+  await attachEnvironmentToZones();
+  return findRecommendedZone();
+}
+
+
+
+
+
+function findRecommendedZone() {
+  const savedPref = parsePreferenceCookie();
+
+  if (!savedPref) {
+    console.warn("No saved preference found");
+    return null;
+  }
+
+  const purposeToTypes = {
+    self_learning: ["reading"],
+    reading_books: ["reading"],
+    group_study: ["collaborative", "reading"],
+    online_meeting: ["collaborative", "reading"],
+    computing: ["computing"],
+    chilling: [],
+  };
+
+  const purpose = normalize(savedPref.purpose);
+
+  if (!Object.prototype.hasOwnProperty.call(purposeToTypes, purpose)) {
+    console.warn(`Unknown purpose: ${savedPref.purpose}`);
+    return null;
+  }
+
+  const preferredTypes = purposeToTypes[purpose];
+
+  const floorAliases = {
+    "1f": "first",
+    first: "first",
+    "2f": "second",
+    second: "second",
+    g: "ground",
+    ground: "ground",
+    lg: "lower_ground",
+    lower_ground: "lower_ground",
+  };
+
+  const preferredFloor = normalize(savedPref.preferred_floor);
+
+  let floorKeys;
+  let averageZones;
+  let averageScopeLabel;
+
+  if (preferredFloor === "idc" || preferredFloor === "") {
+    // Search every floor and calculate one average for the whole library.
+    floorKeys = Object.keys(floors);
+
+    averageZones = Object.values(floors).flatMap(
+      (floor) => floor.zones
+    );
+
+    averageScopeLabel = "Entire library";
+  } else {
+    const selectedFloor = floorAliases[preferredFloor];
+
+    if (!selectedFloor || !floors[selectedFloor]) {
+      console.warn(
+        `Unknown preferred floor: ${savedPref.preferred_floor}`
+      );
+
+      return null;
+    }
+
+    // Search only the selected floor and use only its zones for averages.
+    floorKeys = [selectedFloor];
+    averageZones = floors[selectedFloor].zones;
+    averageScopeLabel = `${floors[selectedFloor].overview.name} floor`;
+  }
+
+  // Clear an older recommendation before making a new one.
+  Object.values(floors).forEach((floor) => {
+    floor.zones.forEach((zone) => {
+      zone.recommended = false;
+    });
+  });
+
+  // Keep "temporature" because that is the cookie property
+  // used in your current code.
+  const temperaturePreference = normalize(savedPref.temporature);
+  const noisePreference = normalize(savedPref.noise);
+  const humidityPreference = normalize(savedPref.humidity);
+
+  // One baseline: selected floor OR whole library.
+  const averageTemperature = getFloorAverage(
+    averageZones,
+    "temperature"
+  );
+
+  const averageNoise = getFloorAverage(
+    averageZones,
+    "noise"
+  );
+
+  const averageHumidity = getFloorAverage(
+    averageZones,
+    "humidity"
+  );
+
+  console.log(`Recommendation average scope: ${averageScopeLabel}`);
+
+  console.log("Environmental averages used:", {
+    temperature: averageTemperature,
+    noise: averageNoise,
+    humidity: averageHumidity,
+  });
+
+  let bestZone = null;
+  let bestFloorKey = null;
+  let bestScore = -Infinity;
+
+  floorKeys.forEach((floorKey) => {
+    const floor = floors[floorKey];
+
+    const candidates = floor.zones.filter((zone) => {
+      // "chilling" allows every zone type.
+      if (preferredTypes.length === 0) {
+        return true;
+      }
+
+      return preferredTypes.includes(zone.type);
+    });
+
+    if (candidates.length === 0) {
+      console.warn(
+        `No ${purpose} zones found on floor: ${floorKey}`
+      );
+
+      return;
+    }
+
+    candidates.forEach((zone) => {
+      const temperature = getNumber(zone.stats?.temperature);
+      const noise = getNumber(zone.stats?.noise);
+      const humidity = getNumber(zone.stats?.humidity);
+
+      const temperatureTerm = getPreferenceTerm(
+        temperaturePreference,
+        temperature,
+        averageTemperature,
+        10,
+        "temperature"
+      );
+
+      const noiseTerm = getPreferenceTerm(
+        noisePreference,
+        noise,
+        averageNoise,
+        1,
+        "noise"
+      );
+
+      const humidityTerm = getPreferenceTerm(
+        humidityPreference,
+        humidity,
+        averageHumidity,
+        1,
+        "humidity"
+      );
+
+      const score =
+        temperatureTerm.score +
+        noiseTerm.score +
+        humidityTerm.score;
+
+      console.group(`Score calculation: ${zone.name}`);
+
+      console.log(`Average scope: ${averageScopeLabel}`);
+
+      console.log(
+        `Temperature: ${temperatureTerm.formula} = ${temperatureTerm.score}`
+      );
+
+      console.log(
+        `Noise: ${noiseTerm.formula} = ${noiseTerm.score}`
+      );
+
+      console.log(
+        `Humidity: ${humidityTerm.formula} = ${humidityTerm.score}`
+      );
+
+      console.log(
+        `Final score = ${temperatureTerm.score} + ` +
+        `${noiseTerm.score} + ${humidityTerm.score} = ${score}`
+      );
+
+      console.groupEnd();
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestZone = zone;
+        bestFloorKey = floorKey;
+      }
+    });
+  });
+
+  if (!bestZone) {
+    console.warn("No recommended zone found");
+    return null;
+  }
+
+  bestZone.recommended = true;
+
+  const result = {
+    floorKey: bestFloorKey,
+    zone: bestZone,
+    score: bestScore,
+  };
+
+  console.log("Final recommendation:", result);
+
+  return result;
+}
+
+
+
+
+
+function getPreferenceTerm(
+  preference,
+  zoneValue,
+  averageValue,
+  pointsPerUnit,
+  metricName
+) {
+  const averageLabel = `library/floor average ${metricName}`;
+
+  if (
+    preference === "idc" ||
+    preference === "" ||
+    zoneValue === null ||
+    averageValue === null
+  ) {
+    return {
+      score: 0,
+      formula: "No preference or missing data → 0",
+    };
+  }
+
+  if (
+    preference === "cooler" ||
+    preference === "quiet" ||
+    preference === "dryer"
+  ) {
+    const score = (averageValue - zoneValue) * pointsPerUnit;
+
+    return {
+      score,
+      formula:
+        `(${averageLabel} ${averageValue} - ` +
+        `zone ${metricName} ${zoneValue}) × ${pointsPerUnit}`,
+    };
+  }
+
+  if (
+    preference === "warmer" ||
+    preference === "lively" ||
+    preference === "wetter"
+  ) {
+    const score = (zoneValue - averageValue) * pointsPerUnit;
+
+    return {
+      score,
+      formula:
+        `(zone ${metricName} ${zoneValue} - ` +
+        `${averageLabel} ${averageValue}) × ${pointsPerUnit}`,
+    };
+  }
+
+  return {
+    score: 0,
+    formula: `Unknown preference "${preference}" → 0`,
+  };
+}
+
+
+
+function normalize(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+function getNumber(value) {
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? number
+    : null;
+}
+
+function getFloorAverage(zones, field) {
+  const values = zones
+    .map((zone) => getNumber(zone.stats?.[field]))
+    .filter((value) => value !== null);
+
+  if (values.length === 0) {
+    return null;
+  }
+
+  return values.reduce((sum, value) => sum + value, 0) /
+    values.length;
+}
+
+function getPreferenceScore(
+  preference,
+  zoneValue,
+  floorAverage,
+  pointsPerUnit
+) {
+  if (
+    preference === 'idc' ||
+    zoneValue === null ||
+    floorAverage === null
+  ) {
+    return 0;
+  }
+
+  if (
+    preference === 'cooler' ||
+    preference === 'quiet' ||
+    preference === 'dryer'
+  ) {
+    return (floorAverage - zoneValue) * pointsPerUnit;
+  }
+
+  if (
+    preference === 'warmer' ||
+    preference === 'lively' ||
+    preference === 'wetter'
+  ) {
+    return (zoneValue - floorAverage) * pointsPerUnit;
+  }
+
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", async () => {  
+  const savedPref = parsePreferenceCookie();
+  if (savedPref) {closeModal();} else {showModal();}  
+  console.log(`this is RenderFloor cookie: `, savedPref);
+
+  if (savedPref && savedPref.humidity == "N/A"){
+    console.log(`This is skipped with no cookies`);
+  }
+  else if (savedPref){
+
+    const recommendation = await prepareRecommendation();
+
+    if (recommendation) {
+      console.log(
+        `Recommended floor: ${recommendation.floorKey}`
+      );
+
+      console.log(
+        `Recommended zone: ${recommendation.zone.name}`
+      );
+
+      console.log(
+        `Score: ${recommendation.score}`
+      );
+    }
+
+    renderFloor(recommendation.floorKey);
+
+    floorSelect.value = recommendation.floorKey;
+    document.getElementById("floorSelect").dispatchEvent(new Event("change", {bubbles: true,}));
+  }
+
 });
 
 
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
 skip.addEventListener("click", async () => {
-    const studyPreference = document.getElementById("studyPreference").value;
+    const purpose = document.getElementById("purpose").value;
     const preferredFloor = document.getElementById("preferredFloor").value;
-    const pref = {                       //JSON
-      study_preference: "N/A",
-      preferred_floor: "N/A"
+    const temporature = document.getElementById("temporature").value;
+    const noise = document.getElementById("noise").value;
+    const humidity = document.getElementById("humidity").value;
+    const take = document.getElementById("receiveTips").checked;
+    const savedPref = parsePreferenceCookie();
+    
+    const pref = {                       // JSON
+      purpose: "N/A",
+      preferred_floor: "N/A",
+      temporature: "N/A",
+      noise: "N/A",
+      humidity: "N/A",
+      take: "N/A"
     }
     try {
-      await savePreferenceCookie(pref);
+      console.log(savedPref);
+      if (savedPref == null) {
+        await savePreferenceCookie(pref);
+      }
+      else {
+        console.log(savedPref);
+      }
       closeModal();
 
     } catch (err) {
@@ -795,17 +1293,28 @@ skip.addEventListener("click", async () => {
 
 
 save.addEventListener("click", async () => {
-    const studyPreference = document.getElementById("studyPreference").value;
+    const purpose = document.getElementById("purpose").value;
     const preferredFloor = document.getElementById("preferredFloor").value;
+    const temporature = document.getElementById("temporature").value;
+    const noise = document.getElementById("noise").value;
+    const humidity = document.getElementById("humidity").value;
+    const take = document.getElementById("receiveTips").checked;
 
-    if (!studyPreference || !preferredFloor) {
+    if (!purpose || !preferredFloor || !temporature|| !noise|| !humidity) {
         alert("Please select both study preference and preferred floor.");
         return;
     }
+    let a = "";
+    if (take) {a= "true";} else {a = "false";}
+
 
     const pref = {                       //JSON
-      study_preference: studyPreference,
-      preferred_floor: preferredFloor
+      purpose: purpose,
+      preferred_floor: preferredFloor,
+      temporature : temporature,
+      noise : noise,
+      humidity : humidity,
+      take : a
     };
 
     try {
@@ -814,11 +1323,25 @@ save.addEventListener("click", async () => {
       console.error(err);
       alert("Failed to save preference.");
     }
+
     document.getElementById("floorSelect").value = preferredFloor;
     renderFloor(preferredFloor);
-
     closeModal();
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -864,7 +1387,7 @@ function updateHKTClock() {
     hour: '2-digit',
     minute: '2-digit',
     // second: '2-digit',
-    hour12: true,
+    hourCycle: 'h23',
   }).format(now);
 
 
