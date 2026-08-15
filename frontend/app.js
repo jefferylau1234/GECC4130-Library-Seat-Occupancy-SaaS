@@ -10,45 +10,26 @@ const floorInfo = document.getElementById("floorInfo");
 const API_BASE = "";      // backend api local url http://127.0.0.1:8000
 
 
+let floorRenderVersion = 0;
 
+async function renderFloor(floorKey) {
+  const renderVersion = ++floorRenderVersion;
+  const floor = floors[floorKey];
 
-async function renderFloor(floorkey) {
+  if (!floor) {
+    console.error(`Unknown floor key: ${floorKey}`);
+    return;
+  }
+
   clearMapBeforeRender();
-  const floor = floors[floorkey];
+
   floorImage.src = floor.image;
   floorImage.alt = `${floor.overview.name} floor map`;
-  
-  mapWrapper.querySelectorAll(".map-zone").forEach(el => el.remove());
 
-
-try{
-    const response = await fetch(`${API_BASE}/env/environmental-data?zone=${floor.overview.zone_id}`);
-
-    if (!response.ok || response == null) {
-        floorInfo.innerHTML = `
-            <h3>${floor.overview.name} Floor Overview</h3>
-            <p>🌡 Temperature: ${floor.overview.temperature} °C</p>
-            <p>🔊 Noise: ${floor.overview.noise} dB</p>
-            <p>💧 Humidity: ${floor.overview.humidity}%</p>
-        `;
-    }
-    else if (response.ok){
-        const data = await response.json();
-
-        floorInfo.innerHTML = `
-            <h3>${floor.overview.name} Floor Overview</h3>
-            <p>🌡 Temperature: ${data.temperature_c} °C</p>
-            <p>🔊 Noise: ${data.noise_db} dB</p>
-            <p>💧 Humidity: ${data.humidity_percent}%</p>
-        `;
-    }
-    } catch (error){
-        console.error(error);
-}
-
-
-  floor.zones.forEach(zone => {
+  // Render the clickable zone overlays immediately.
+  floor.zones.forEach((zone) => {
     const div = document.createElement("div");
+
     div.className = "map-zone";
     div.style.left = zone.left;
     div.style.top = zone.top;
@@ -57,46 +38,88 @@ try{
     div.dataset.id = zone.id;
 
     if (zone.recommended) {
-        div.classList.add("recommended-zone");
+      div.classList.add("recommended-zone");
     }
 
-    if (zone.type == "computing") {
-        div.classList.add("pc-zone");
+    if (zone.type === "computing") {
+      div.classList.add("pc-zone");
+    } else if (zone.type === "collaborative") {
+      div.classList.add("hubs");
     }
-    else if (zone.type == "collaborative") {
-        div.classList.add("hubs");
-    } 
 
     let emoji = "";
 
-    if (zone.type === "computing") {
-    emoji = "🖥️";
-    } else if (zone.type === "collaborative") {
-    emoji = "👥";
-    } else if (zone.type === "reading") {
-    emoji = "📚";
-    }
-
-
     if (zone.recommended) {
-    emoji = "⭐";
+      emoji = "⭐";
+    } else if (zone.type === "computing") {
+      emoji = "🖥️";
+    } else if (zone.type === "collaborative") {
+      emoji = "👥";
+    } else if (zone.type === "reading") {
+      emoji = "📚";
     }
-    
+
     if (emoji) {
-    const emojiElement = document.createElement("span");
-    emojiElement.className = "zone-emoji";
-    emojiElement.textContent = emoji;
-    div.appendChild(emojiElement);
+      const emojiElement = document.createElement("span");
+      emojiElement.className = "zone-emoji";
+      emojiElement.textContent = emoji;
+      div.appendChild(emojiElement);
     }
 
-
-    div.addEventListener("click", (e) => {
-      e.stopPropagation();
+    div.addEventListener("click", (event) => {
+      event.stopPropagation();
       showInfo(zone);
     });
 
     mapWrapper.appendChild(div);
   });
+
+  // Default/fallback overview while the API request is loading.
+  const showFallbackOverview = () => {
+    floorInfo.innerHTML = `
+      <h3>${floor.overview.name} Floor Overview</h3>
+      <p>🌡 Temperature: ${floor.overview.temperature} °C</p>
+      <p>🔊 Noise: ${floor.overview.noise} dB</p>
+      <p>💧 Humidity: ${floor.overview.humidity}%</p>
+    `;
+  };
+
+  showFallbackOverview();
+
+  try {
+    const response = await fetch(
+      `${API_BASE}/env/environmental-data?zone=${floor.overview.zone_id}`
+    );
+
+    // A newer floor was selected while this request was pending.
+    if (renderVersion !== floorRenderVersion) {
+      return;
+    }
+
+    if (!response.ok) {
+      return;
+    }
+
+    const data = await response.json();
+
+    // Check again because JSON parsing is also asynchronous.
+    if (renderVersion !== floorRenderVersion) {
+      return;
+    }
+
+    floorInfo.innerHTML = `
+      <h3>${floor.overview.name} Floor Overview</h3>
+      <p>🌡 Temperature: ${data.temperature_c} °C</p>
+      <p>🔊 Noise: ${data.noise_db} dB</p>
+      <p>💧 Humidity: ${data.humidity_percent}%</p>
+    `;
+  } catch (error) {
+    if (renderVersion !== floorRenderVersion) {
+      return;
+    }
+
+    console.error("Failed to load floor environment data:", error);
+  }
 }
 
 
@@ -788,7 +811,50 @@ function showModal() {;preferenceModal.classList.remove("hidden");}
 
 close.addEventListener("click", closeModal);
 
-document.getElementById("editPreferenceBtn").addEventListener("click", showModal);
+document.getElementById("editPreferenceBtn").addEventListener("click", ()=>{
+  const savedPref = parsePreferenceCookie();
+  console.log(savedPref);
+  populatePreferenceForm(savedPref);
+  showModal();
+});
+
+
+
+
+
+function populatePreferenceForm(pref) {
+  if (!pref) return;
+
+  // Skip preference means: retain the HTML's default choices.
+  if (
+    pref.purpose === "N/A" ||
+    pref.preferred_floor === "N/A" ||
+    pref.temporature === "N/A" ||
+    pref.noise === "N/A" ||
+    pref.humidity === "N/A"
+  ) {
+    console.log("skipped");
+    return;
+  }
+
+  document.getElementById("purpose").value = pref.purpose;
+  document.getElementById("preferredFloor").value = pref.preferred_floor;
+  document.getElementById("temporature").value = pref.temporature;
+  document.getElementById("noise").value = pref.noise;
+  document.getElementById("humidity").value = pref.humidity;
+
+  document.getElementById("receiveTips").checked =
+    pref.take === true || pref.take === "true";
+}
+
+
+
+
+
+
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1324,8 +1390,31 @@ save.addEventListener("click", async () => {
       alert("Failed to save preference.");
     }
 
-    document.getElementById("floorSelect").value = preferredFloor;
-    renderFloor(preferredFloor);
+
+
+
+
+
+    const recommendation = await prepareRecommendation();
+
+    if (recommendation) {
+      console.log(
+        `Recommended floor: ${recommendation.floorKey}`
+      );
+
+      console.log(
+        `Recommended zone: ${recommendation.zone.name}`
+      );
+
+      console.log(
+        `Score: ${recommendation.score}`
+      );
+    }
+
+    renderFloor(recommendation.floorKey);
+
+    floorSelect.value = recommendation.floorKey;
+    document.getElementById("floorSelect").dispatchEvent(new Event("change", {bubbles: true,}));
     closeModal();
 });
 
