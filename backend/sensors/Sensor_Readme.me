@@ -1,1 +1,88 @@
 
+# Guide of sensors — building from Arduino IDE
+
+**Remark (27/07/2026)**  
+Since we are using cloud service now, we should change the method of uploading data.
+
+---
+
+## Layers
+1. Hardware  
+   - Temperature sensors  
+   - Entry sensors (ultrasonic)  
+2. Firmware (Arduino IDE)  
+   - Read sensors
+   - Storing data as class
+   - Serialize data 
+   - Upload data
+3. Connectivity  
+   - Wi‑Fi / ESP-NOW
+   - Send data to cloud (HTTP)  
+4. Cloud  
+   - FASTAPI endpoint (Azure lot hub?)
+
+---
+
+## Sensors
+- Temperature sensors  
+  - Read every few minutes  (_MS variables for config)
+  - Send reading to cloud on schedule
+
+- Entry sensors (event-driven)  
+  - Detect people/objects passing gate  
+  - Trigger recording and upload when event happens
+
+---
+## How Temperature sensors works
+
+### senders side
+- initialize the Wi‑Fi mode and connecct to recevier
+- Read data regularly.
+- build data class to store
+- Serialize data to byte array
+- send the data regularly to recevier
+
+### recevier side
+- initialize the Wi‑Fi mode and connecct to senders
+- Read data regularly.
+- deserialize data
+- store data into queue (incompleted)
+- build JSON and send HTTP request (incompleted)
+- send the data regularly to cloud server (incompleted)
+
+
+---
+
+## How entry detection works
+- Use an ultrasonic sensor that measures distance.  
+- The sensor has a baseline distance (example: 20 cm).  
+- If something passes and blocks the line, distance becomes smaller (example: 10 cm).  
+- The drop in distance means an object is there.  
+
+### detail
+- Read distance regularly.  
+- Keep a baseline value checking when no one is there.  
+- If distance drops below a threshold (or drops by certain amount), mark event start.  
+- Wait a few readings to confirm (avoid false trigger).  
+- When distance returns near baseline, mark event end.  
+- On event end, save timestamps, baseline, min distance, duration, then upload.
+
+## Data upload (incompleted)
+- Build a small JSON for data  
+- Put data in a queue and send to cloud in background (don’t block sensor loop).  
+- If upload fails, retry and keep data in local storage until it succeeds.  
+
+---
+ JSON (Entry event):
+```
+{
+
+}
+```
+
+ JSON (Temperature event):
+```
+{
+    
+}
+```

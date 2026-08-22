@@ -1,0 +1,52 @@
+floors = {
+    "second": {
+        "overview": {"zone_id": "2F_overview", "type": "overview" },
+        "zones": [
+            {"id": "2F_hub1", "type": "reading"},
+            {"id": "2F_study2", "type": "reading"},
+            {"id": "2F_study3", "type": "reading"},
+            {"id": "2F_study4", "type": "reading"},
+            {"id": "2F_study6", "type": "reading"},
+            {"id": "2F_study5", "type": "reading"},
+            {"id": "2F_study7", "type": "reading"},
+            {"id": "2F_study8", "type": "reading"},
+            {"id": "2F_study9", "type": "reading"},
+            {"id": "2F_pc10", "type": "computing"},
+        ],
+    },
+    "first": {
+        "overview": {"zone_id": "1F_overview", "type": "overview" },
+        "zones": [
+            {"id": "1F_study1", "type": "reading"},
+            {"id": "1F_study2", "type": "reading"},
+            {"id": "1F_study3", "type": "reading"},
+            {"id": "1F_study4", "type": "reading"},
+            {"id": "1F_study6", "type": "reading"},
+            {"id": "1F_study5", "type": "reading"},
+            {"id": "1F_study10", "type": "reading"},
+            {"id": "1F_study7", "type": "reading"},
+            {"id": "1F_hub8", "type": "reading"},
+            {"id": "1F_study9", "type": "reading"},
+            {"id": "1F_study11", "type": "reading"},
+            {"id": "1F_study12", "type": "reading"},
+            {"id": "1F_pc13", "type": "computing"},
+        ],
+    },
+    "ground": {
+        "overview": {"zone_id": "GF_overview", "type": "overview" },
+        "zones": [
+            {"id": "GF_study5", "type": "reading"},
+            {"id": "GF_study9", "type": "reading"},
+            {"id": "GF_study2", "type": "reading"},
+            {"id": "GF_study6", "type": "reading"},
+            {"id": "GF_study7", "type": "reading"},
+            {"id": "GF_pc8", "type": "computing"},
+            {"id": "GF_pc3", "type": "computing"},
+            {"id": "GF_study4", "type": "reading"},
+            {"id": "GF_study1", "type": "reading"},
+        ]
+
+    }
+
+}
+    
