@@ -372,8 +372,6 @@ function buildChartData(series, hours, weekday, cutoffHour = null) {
 
     try{
 
-
-    
     const [todaySeries, lastSeries] = await Promise.all([
       fetch(`${API_BASE}/occupancy/today`),
       fetch(`${API_BASE}/occupancy/last-week`)
@@ -448,9 +446,6 @@ const maxOccupancy = chartValues.length > 0
   : 0;
 
 const yMax = Math.max(Math.ceil(maxOccupancy * 1.2), 50);
-
-console.log("Chart max occupancy:", maxOccupancy);
-console.log("Chart suggested y max:", yMax);
 
     occupancyChart = new Chart(occupancyCtx, {
         type: "line",
@@ -1292,26 +1287,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log(`This is skipped with no cookies`);
   }
   else if (savedPref){
+    if (!(savedPref.humidity == "idc" && savedPref.noise == "idc" && savedPref.preferred_floor == "idc" && savedPref.purpose == "chilling" && savedPref.temporature == "idc" )){
+      const recommendation = await prepareRecommendation();
 
-    const recommendation = await prepareRecommendation();
+      if (recommendation) {
+        console.log(
+          `Recommended floor: ${recommendation.floorKey}`
+        );
 
-    if (recommendation) {
-      console.log(
-        `Recommended floor: ${recommendation.floorKey}`
-      );
+        console.log(
+          `Recommended zone: ${recommendation.zone.name}`
+        );
 
-      console.log(
-        `Recommended zone: ${recommendation.zone.name}`
-      );
+        console.log(
+          `Score: ${recommendation.score}`
+        );
+      }
 
-      console.log(
-        `Score: ${recommendation.score}`
-      );
+      if (savedPref.take == "true"){
+        renderFloor(recommendation.floorKey);
+        floorSelect.value = recommendation.floorKey;
+      }
+      else {
+        renderFloor("ground");
+        floorSelect.value = "ground";
+      }
     }
-
-    renderFloor(recommendation.floorKey);
-
-    floorSelect.value = recommendation.floorKey;
+    else{
+      console.log("i don't care anything, no preference!!!");
+      renderFloor("ground");
+      floorSelect.value = "ground";
+    }
     document.getElementById("floorSelect").dispatchEvent(new Event("change", {bubbles: true,}));
   }
 
@@ -1398,47 +1404,44 @@ save.addEventListener("click", async () => {
       alert("Failed to save preference.");
     }
 
+    const savedPref = parsePreferenceCookie();
 
+    if (!(savedPref.humidity == "idc" && savedPref.noise == "idc" && savedPref.preferred_floor == "idc" && savedPref.purpose == "chilling" && savedPref.temporature == "idc" )){
+      const recommendation = await prepareRecommendation();
 
+      if (recommendation) {
+        console.log(
+          `Recommended floor: ${recommendation.floorKey}`
+        );
 
+        console.log(
+          `Recommended zone: ${recommendation.zone.name}`
+        );
 
+        console.log(
+          `Score: ${recommendation.score}`
+        );
+      }
 
-    const recommendation = await prepareRecommendation();
-
-    if (recommendation) {
-      console.log(
-        `Recommended floor: ${recommendation.floorKey}`
-      );
-
-      console.log(
-        `Recommended zone: ${recommendation.zone.name}`
-      );
-
-      console.log(
-        `Score: ${recommendation.score}`
-      );
+      if (savedPref.take == "true"){
+        renderFloor(recommendation.floorKey);
+        floorSelect.value = recommendation.floorKey;
+      }
+      else {
+        renderFloor("ground");
+        floorSelect.value = "ground";
+      }
+    }
+    else{
+      console.log("i don't care anything, no preference!!!");
+      renderFloor("ground");
+      floorSelect.value = "ground";
     }
 
-    renderFloor(recommendation.floorKey);
 
-    floorSelect.value = recommendation.floorKey;
     document.getElementById("floorSelect").dispatchEvent(new Event("change", {bubbles: true,}));
     closeModal();
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
