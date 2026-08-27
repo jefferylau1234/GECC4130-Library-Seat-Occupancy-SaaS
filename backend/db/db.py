@@ -2,7 +2,7 @@
 
 import os
 from dotenv import load_dotenv
-from sqlalchemy import String, Integer, DateTime, create_engine, Float
+from sqlalchemy import String, Integer, Boolean, DateTime, create_engine, Float
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, Mapped, mapped_column
 from datetime import datetime
 
@@ -27,7 +27,7 @@ SessionLocal = sessionmaker(
 )
 
 
-# tables
+# database tables
 class OccupancyReading(Base):
     __tablename__ = "occupancy_readings"
     hour_str: Mapped[str] = mapped_column(String(13), primary_key=True)
@@ -44,12 +44,27 @@ class EnvironmentalReading(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
-
 class OccupancyRecord(Base):
     __tablename__ = "occupancy_records"
     recorded_at: Mapped[str] = mapped_column(String(30), primary_key = True)
     occupant_change: Mapped[str] = mapped_column(String(13), nullable=False)
     occupant_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class Sensors(Base):
+    __tablename__ = "sensor_sleeping"
+    sensorId: Mapped[str] = mapped_column(String(13), primary_key = True)
+    status: Mapped[str] = mapped_column(String(13), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(40), nullable=False)
+
+
+
+class Visiting(Base):
+    __tablename__ = "visiting"
+    recorded_at: Mapped[str] = mapped_column(String(40), primary_key = True)
+    visiting: Mapped[bool] = mapped_column(Boolean, nullable=False)
+
+
 
 
 

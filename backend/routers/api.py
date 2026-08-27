@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 import os
 
 from sqlalchemy.orm import Session
-from ..db.db import get_db, OccupancyReading, EnvironmentalReading, OccupancyRecord
+from ..db.db import get_db, OccupancyReading, EnvironmentalReading, OccupancyRecord, Sensors, Visiting
 from sqlalchemy.dialects.postgresql import insert
 
 
@@ -91,6 +91,18 @@ class EnvironmentalReadingCreate(BaseModel):
     temperature_c: Optional[float] = Field(default=None, ge=-20, le=60)
     humidity: Optional[float] = Field(default=None, ge=0, le=100)
     noise_db: Optional[float] = Field(default=None, ge=0, le=150)
+
+
+
+class SensorStatus(BaseModel):
+    sensorId: str = Field(min_length=1, max_length=26)
+    status: str = Field(min_length=1, max_length=26)
+
+
+
+class Visit(BaseModel):
+    status: bool = Optional[bool]
+
 
 
 
@@ -315,3 +327,57 @@ def create_environment_reading(sensor: EnvironmentalReadingCreate, x_sensor_key:
     return {
         "message": "Environmental data received",
     }
+
+
+
+
+# for sensors to pass status
+@router.post("/sensor/status")
+def create_occupancy_reading(sensor: SensorStatus, x_sensor_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    verify_sensor_key(x_sensor_key)
+
+    now = f"{datetime.now(HKT)}"
+
+    stmt = insert(Sensors).values(
+        sensorId = sensor.sensorId,
+        status = sensor.status,
+        updated_at = now,
+    )
+
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[Sensors.sensorId],
+        set_={
+            "status": stmt.excluded.status,
+            "updated_at": stmt.excluded.updated_at,
+        },
+    )
+
+    db.execute(stmt)
+    db.commit()
+
+
+    return {
+        "message": "sensor status received",
+    }
+
+
+
+
+@router.post("/visiting")
+def visiting(browser: Visit, x_sensor_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    verify_sensor_key(x_sensor_key)
+
+    now = f"{datetime.now(HKT)}"
+    
+
+    stmt = insert(Visiting).values(
+        recorded_at = now,
+        visiting = browser.status
+    )
+
+    db.execute(stmt)
+    db.commit()
+
+
+    return { ""}
+

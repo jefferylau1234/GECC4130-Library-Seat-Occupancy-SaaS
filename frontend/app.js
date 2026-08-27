@@ -13,6 +13,7 @@ const API_BASE = "";      // backend api local url http://127.0.0.1:8000
 let floorRenderVersion = 0;
 
 async function renderFloor(floorKey) {
+
   const renderVersion = ++floorRenderVersion;
   const floor = floors[floorKey];
 
@@ -193,7 +194,7 @@ async function loadDashboard(){
     predicted_occupancy.textContent = `${predictionJSON.predicted_occupancy}+ `;
 
     occupancy_mes.textContent = `${occupancyJSON.message} `;
-    prediction_mes.textContent = `Predicted peak at ${predictionJSON.predicted_peak} `;
+    prediction_mes.textContent = `coming soon 🔜`; // `Predicted peak at ${predictionJSON.predicted_peak} `;
 
     updateOccupancy(occupancyJSON.current_occupancy);
 
@@ -1266,16 +1267,23 @@ function getPreferenceScore(
 
 
 
-
-
-
-
-
-
-
-
-
 document.addEventListener("DOMContentLoaded", async () => {  
+
+  const response = await fetch(
+    `${API_BASE}/api/visiting`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-sensor-key": "ABCDEFG12345",
+      },
+      body: JSON.stringify({
+        status: true,
+      }),
+    }
+  );
+
+
   const savedPref = parsePreferenceCookie();
   if (savedPref) {closeModal();} else {showModal();}  
   console.log(`this is RenderFloor cookie: `, savedPref);

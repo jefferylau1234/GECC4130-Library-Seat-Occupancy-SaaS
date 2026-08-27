@@ -10,8 +10,8 @@ def get_predicted_occupancy_data():
     return {
         "library_name": "CUHK CC Library",
         "next_period": "4pm",
-        "predicted_occupancy": 127,
-        "predicted_peak": "2pm",
+        "predicted_occupancy": 0,
+        "predicted_peak": "",
         "last_updated": datetime.now(timezone.utc)
     }
 
