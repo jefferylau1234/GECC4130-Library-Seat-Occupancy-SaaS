@@ -285,7 +285,6 @@ def create_environment_reading(sensor: EnvironmentalReadingCreate, x_sensor_key:
     verify_sensor_key(x_sensor_key)
 
     now = datetime.now(HKT)
-    sensor.humidity *= 1
 
     type = sensor.zone.split("_")[1].rstrip("0123456789")
 
@@ -298,6 +297,13 @@ def create_environment_reading(sensor: EnvironmentalReadingCreate, x_sensor_key:
         type = "Floor Overview"
     elif type == "hub":
         type = "Study Hubs"
+
+
+
+    sensor.noise_db -= 10
+    sensor.temperature_c -= 0.5
+
+
 
 
     stmt = insert(EnvironmentalReading).values(
@@ -336,7 +342,7 @@ def create_environment_reading(sensor: EnvironmentalReadingCreate, x_sensor_key:
 def create_occupancy_reading(sensor: SensorStatus, x_sensor_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     verify_sensor_key(x_sensor_key)
 
-    now = f"{datetime.now(HKT)}"
+    now = f"{datetime.now(HKT).strftime('%Y-%m-%d %I:%M%p').lower()}"
 
     stmt = insert(Sensors).values(
         sensorId = sensor.sensorId,
