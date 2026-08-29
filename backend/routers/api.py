@@ -373,7 +373,7 @@ def create_occupancy_reading(sensor: SensorStatus, x_sensor_key: str | None = He
 def visiting(browser: Visit, x_sensor_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     verify_sensor_key(x_sensor_key)
 
-    now = f"{datetime.now(HKT)}"
+    now = f"{datetime.now(HKT).strftime('%Y-%m-%d %I:%M%p').lower()}"
     
 
     stmt = insert(Visiting).values(

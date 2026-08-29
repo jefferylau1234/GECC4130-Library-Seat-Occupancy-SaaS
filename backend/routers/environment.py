@@ -28,7 +28,7 @@ def create_environment_reading(zone: str, db: Session = Depends(get_db)):
         "zone": row.zone,
         "zone_type": row.zone_type,
         "temperature_c": row.temperature_c,
-        "noise_db": round(row.noise_db),
+        "noise_db": round(row.noise_db, 2),
         "humidity_percent": row.humidity_percent,
         "last_updated": row.updated_at
     }
