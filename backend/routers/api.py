@@ -301,7 +301,7 @@ def create_environment_reading(sensor: EnvironmentalReadingCreate, x_sensor_key:
 
 
     sensor.noise_db -= 10
-    sensor.temperature_c -= 0.5
+    sensor.temperature_c -= 2
 
 
 
