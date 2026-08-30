@@ -34,7 +34,16 @@ def get(db: Session = Depends(get_db)):
                 )
             ) AS seconds_since_update
         FROM public.environmental_readings
-        WHERE updated_at < NOW() - INTERVAL '35 seconds'
+        WHERE
+            (
+                zone_type = 'Floor Overview'
+                AND updated_at < NOW() - INTERVAL '31 minutes'
+            )
+            OR
+            (
+                zone_type IS DISTINCT FROM 'Floor Overview'
+                AND updated_at < NOW() - INTERVAL '35 seconds'
+            )
         ORDER BY updated_at ASC
     """)
     result = db.execute(sql)
