@@ -5,6 +5,7 @@ from backend.routers.occupancy import router as occupancy_router
 from backend.routers.prediction import router as prediction_router
 from backend.routers.api import router as api_router
 from backend.routers.environment import router as env_router
+from backend.routers.check import router as check_router
 from backend.db.db import Base, engine
 
 app = FastAPI(title="CC Library Occupancy API", version="0.1.0")
@@ -33,6 +34,7 @@ app.include_router(occupancy_router)
 app.include_router(prediction_router)
 app.include_router(api_router)
 app.include_router(env_router)
+app.include_router(check_router)
 
 Base.metadata.create_all(engine)
 
