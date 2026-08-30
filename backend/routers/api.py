@@ -7,7 +7,7 @@ import os
 from sqlalchemy.orm import Session
 from ..db.db import get_db, OccupancyReading, EnvironmentalReading, OccupancyRecord, Sensors, Visiting
 from sqlalchemy.dialects.postgresql import insert
-
+from sqlalchemy import text
 
 router = APIRouter(prefix = "/api")
 
@@ -352,7 +352,7 @@ def create_occupancy_reading(sensor: SensorStatus, x_sensor_key: str | None = He
 
     stmt = stmt.on_conflict_do_update(
         index_elements=[Sensors.sensorId],
-        set_={
+        set_={ 
             "status": stmt.excluded.status,
             "updated_at": stmt.excluded.updated_at,
         },
@@ -360,6 +360,10 @@ def create_occupancy_reading(sensor: SensorStatus, x_sensor_key: str | None = He
 
     db.execute(stmt)
     db.commit()
+
+    if (sensor.sensorId == "entry1"):
+        updated_overviews = refresh_floor_overviews(db)
+
 
 
     return {
@@ -387,3 +391,102 @@ def visiting(browser: Visit, x_sensor_key: str | None = Header(default=None), db
 
     return { ""}
 
+
+
+
+def refresh_floor_overviews(db: Session) -> list[dict]:
+    """
+    Calculate environmental averages for GF, 1F, and 2F.
+
+    It excludes existing Floor Overview rows, so an overview
+    never accidentally gets included in its own average.
+    """
+
+    sql = text("""
+        SELECT
+            split_part(zone, '_', 1) AS floor_id,
+            AVG(temperature_c) AS average_temperature_c,
+            AVG(noise_db) AS average_noise_db,
+            AVG(humidity_percent) AS average_humidity_percent,
+            COUNT(*) AS source_zone_count
+        FROM public.environmental_readings
+        WHERE zone_type != 'Floor Overview'
+          AND split_part(zone, '_', 1) IN ('GF', '1F', '2F')
+        GROUP BY split_part(zone, '_', 1)
+        ORDER BY floor_id
+    """)
+
+    result = db.execute(sql)
+    floor_rows = result.mappings().all()
+
+    now = datetime.now(HKT)
+
+    updated_overviews = []
+
+
+
+
+    for row in floor_rows:
+        floor_id = row["floor_id"]
+
+        average_temperature = round(
+            float(row["average_temperature_c"]),
+            2,
+        )
+
+        average_noise = round(
+            float(row["average_noise_db"]),
+            2,
+        )
+
+        average_humidity = round(
+            float(row["average_humidity_percent"]),
+            2,
+        )
+
+        # Normally one overview row per floor.
+        overview_zones = [f"{floor_id}_overview"]
+
+        # LG_overview must always have exactly the same values as GF_overview.
+        if floor_id == "GF":
+            overview_zones.append("LG_overview")
+
+        # Save/update each overview row.
+        for overview_zone in overview_zones:
+            stmt = insert(EnvironmentalReading).values(
+                zone=overview_zone,
+                zone_type="Floor Overview",
+                temperature_c=average_temperature,
+                noise_db=average_noise,
+                humidity_percent=average_humidity,
+                updated_at=now,
+            )
+
+            stmt = stmt.on_conflict_do_update(
+                index_elements=[EnvironmentalReading.zone],
+                set_={
+                    "zone_type": "Floor Overview",
+                    "temperature_c": stmt.excluded.temperature_c,
+                    "noise_db": stmt.excluded.noise_db,
+                    "humidity_percent": stmt.excluded.humidity_percent,
+                    "updated_at": stmt.excluded.updated_at,
+                },
+            )
+
+            db.execute(stmt)
+
+            updated_overviews.append(
+                {
+                    "zone": overview_zone,
+                    "temperature_c": average_temperature,
+                    "noise_db": average_noise,
+                    "humidity_percent": average_humidity,
+                    "source_zone_count": row["source_zone_count"],
+                }
+            )
+
+
+
+    db.commit()
+
+    return updated_overviews
