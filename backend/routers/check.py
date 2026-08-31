@@ -37,12 +37,14 @@ def get(db: Session = Depends(get_db)):
         WHERE
             (
                 zone_type = 'Floor Overview'
+                AND timezone('Asia/Hong_Kong', NOW())::time >= TIME '08:00:00'
+                AND timezone('Asia/Hong_Kong', NOW())::time < TIME '22:00:00'
                 AND updated_at < NOW() - INTERVAL '31 minutes'
             )
             OR
             (
                 zone_type IS DISTINCT FROM 'Floor Overview'
-                AND updated_at < NOW() - INTERVAL '35 seconds'
+                AND updated_at < NOW() - INTERVAL '31 minutes'
             )
         ORDER BY updated_at ASC
     """)
