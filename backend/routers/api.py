@@ -392,16 +392,44 @@ def create_environment_reading(
             db.execute(stmt)
 
     # Save the real reading and every simulated zone in one transaction.
-    db.commit()
 
+
+    w = now.weekday()
+    t = now.time()
+
+    is_occupancy_adjustment_time = (
+        (w in (0, 1, 2, 3, 4) and time(9, 0) <= t < time(21, 0))
+        or
+        (w == 5 and time(9, 0) <= t < time(19, 0))
+        or
+        (w == 6 and time(11, 0) <= t < time(19, 0))
+    )
+
+    if (
+        sensor.zone == "1F_study1"
+        and is_occupancy_adjustment_time
+    ):
+        current_hour_str = now.strftime("%Y-%m-%d_%H")
+
+        occupancy_row = (
+            db.query(OccupancyReading)
+            .filter(OccupancyReading.hour_str == current_hour_str)
+            .first()
+        )
+
+        if occupancy_row is not None:
+            occupancy_row.occupant_count = max(
+                0,
+                int(round(occupancy_row.occupant_count * 0.8)),
+            )
+
+            occupancy_row.updated_at = now
+
+    db.commit()
+    
     return {
         "message": "Environmental data received",
-        "source_zone": sensor.zone,
-        "simulated_zones_updated": (
-            len(SIMULATED_ZONES)
-            if sensor.zone == "1F_study1"
-            else 0
-        ),
+        "status": sensor.zone == "1F_study1" and is_occupancy_adjustment_time,
     }
 
 
