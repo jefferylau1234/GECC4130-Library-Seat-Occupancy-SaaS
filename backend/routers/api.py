@@ -157,9 +157,9 @@ def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str |
 
     now = datetime.now(HKT)
     formatted_time = now.strftime("%Y-%m-%d_%H:%M:%S")
-    # if not time(8, 20) < now.time() < time(22, 0):    
-    #     print("CC library is still not opened yet")
-    #     return {"message": "CC library is not opened yet",}
+    if not time(8, 20) < now.time() < time(22, 0):    
+        print("CC library is still not opened yet")
+        return {"message": "CC library is not opened yet",}
 
     hour_str = now.strftime("%Y-%m-%d_%H")
     row = db.query(OccupancyReading).filter(OccupancyReading.hour_str == hour_str).first()
@@ -277,61 +277,131 @@ def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str |
 #   "noise_db": 30,
 # }
 
+import random
+
+SIMULATED_ZONES = [
+    "1F_study4",
+    "GF_study6",
+    "2F_study9",
+    "2F_study8",
+    "2F_study5",
+    "2F_study3",
+    "1F_pc13",
+    "1F_study12",
+    "1F_study11",
+    "1F_study9",
+    "1F_hub8",
+    "1F_study7",
+    "1F_study10",
+    "GF_pc8",
+    "GF_study7",
+    "GF_study9",
+]
 
 
-# for sensors to pass environmantal data
+def get_zone_type(zone: str) -> str:
+    raw_zone_type = zone.split("_")[1].rstrip("0123456789")
+
+    if raw_zone_type == "study":
+        return "Quiet Study zone"
+    elif raw_zone_type == "pc":
+        return "PC zone"
+    elif raw_zone_type == "overview":
+        return "Floor Overview"
+    elif raw_zone_type == "hub":
+        return "Study Hubs"
+
+    return "Unknown zone"
+
+
 @router.post("/sensor/environmental-data")
-def create_environment_reading(sensor: EnvironmentalReadingCreate, x_sensor_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+def create_environment_reading(
+    sensor: EnvironmentalReadingCreate,
+    x_sensor_key: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
     verify_sensor_key(x_sensor_key)
 
     now = datetime.now(HKT)
 
-    type = sensor.zone.split("_")[1].rstrip("0123456789")
+    # Apply your sensor calibration.
+    real_temperature = sensor.temperature_c - 2
+    real_noise = sensor.noise_db - 10
+    real_humidity = sensor.humidity
 
-
-    if type == "study":
-        type = "Quiet Study zone"
-    elif type == "pc": 
-        type = "PC zone"
-    elif type == "overview":
-        type = "Floor Overview"
-    elif type == "hub":
-        type = "Study Hubs"
-
-
-
-    sensor.noise_db -= 10
-    sensor.temperature_c -= 2
-
-
-
-
+    # Save the actual submitted sensor data.
     stmt = insert(EnvironmentalReading).values(
-        zone= sensor.zone,
-        zone_type= type,
-        temperature_c= sensor.temperature_c,
-        noise_db= sensor.noise_db,
-        humidity_percent= sensor.humidity,
-        updated_at= now,
+        zone=sensor.zone,
+        zone_type=get_zone_type(sensor.zone),
+        temperature_c=real_temperature,
+        noise_db=real_noise,
+        humidity_percent=real_humidity,
+        updated_at=now,
     )
 
     stmt = stmt.on_conflict_do_update(
         index_elements=[EnvironmentalReading.zone],
         set_={
-            "zone_type": type,
-            "temperature_c": sensor.temperature_c,
-            "noise_db": sensor.noise_db,
-            "humidity_percent": sensor.humidity,
+            "zone_type": get_zone_type(sensor.zone),
+            "temperature_c": real_temperature,
+            "noise_db": real_noise,
+            "humidity_percent": real_humidity,
             "updated_at": stmt.excluded.updated_at,
         },
     )
 
-
     db.execute(stmt)
+
+    # Generate estimated readings only when the real sensor is 1F_study1.
+    if sensor.zone == "1F_study1":
+        for zone in SIMULATED_ZONES:
+            simulated_temperature = round(
+                max(-20, min(60, real_temperature + random.uniform(-0.5, 0.5))),
+                1,
+            )
+
+            simulated_noise = round(
+                max(0, min(150, real_noise + random.uniform(-3, 3))),
+                1,
+            )
+
+            simulated_humidity = round(
+                max(0, min(100, real_humidity + random.uniform(-3, 3))),
+                1,
+            )
+
+            stmt = insert(EnvironmentalReading).values(
+                zone=zone,
+                zone_type=get_zone_type(zone),
+                temperature_c=simulated_temperature,
+                noise_db=simulated_noise,
+                humidity_percent=simulated_humidity,
+                updated_at=now,
+            )
+
+            stmt = stmt.on_conflict_do_update(
+                index_elements=[EnvironmentalReading.zone],
+                set_={
+                    "temperature_c": simulated_temperature,
+                    "noise_db": simulated_noise,
+                    "humidity_percent": simulated_humidity,
+                    "updated_at": stmt.excluded.updated_at,
+                },
+            )
+
+            db.execute(stmt)
+
+    # Save the real reading and every simulated zone in one transaction.
     db.commit()
 
     return {
         "message": "Environmental data received",
+        "source_zone": sensor.zone,
+        "simulated_zones_updated": (
+            len(SIMULATED_ZONES)
+            if sensor.zone == "1F_study1"
+            else 0
+        ),
     }
 
 
