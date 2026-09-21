@@ -176,32 +176,32 @@ def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str |
     i = ""
     j = 0
     RANDOM = random.choice([0, 1])
-
+    MINUS = 2
 
     if isinstance(sensor, OccupancyBuffer):
         for s in sensor.signal:
             if s == 1:
                 current_occupancy += RANDOM
-                j+=1
+                j+= RANDOM
             elif s == 0:
-                current_occupancy -= 3
-                j-=3
+                current_occupancy -= MINUS
+                j-=MINUS
         i = f"+{j}" if j >= 0 else f"{j}"
 
     elif isinstance(sensor, OccupancySingle):
         if sensor.signal == 1:
             current_occupancy += RANDOM
         elif sensor.signal == 0:
-            current_occupancy -= 3
-        i = "+1" if sensor.signal == 1 else "-3"
+            current_occupancy -= MINUS
+        i = f"+{RANDOM}" if sensor.signal == 1 else f"-{MINUS}"
 
     elif isinstance(sensor, OccupancyRecorded):
         if sensor.signal == 1:
             current_occupancy += RANDOM
-            j+=1
+            j+= RANDOM
         elif sensor.signal == 0:
-            current_occupancy -= 3
-            j-=3
+            current_occupancy -= MINUS
+            j-=MINUS
 
         i = f"+{j}" if j >= 0 else f"{j}"
 
@@ -209,10 +209,10 @@ def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str |
         for r in sensor.series:
             if r.signal == 1:
                 current_occupancy += RANDOM
-                j+=1
+                j+= RANDOM
             elif r.signal == 0:
-                current_occupancy -= 3
-                j-=3
+                current_occupancy -= MINUS
+                j-=MINUS
             i = f"+{j}" if j >= 0 else f"{j}"
 
 
