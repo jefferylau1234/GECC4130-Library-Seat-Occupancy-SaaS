@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..db.db import get_db, OccupancyReading, EnvironmentalReading, OccupancyRecord, Sensors, Visiting
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import text
+import random
 
 router = APIRouter(prefix = "/api")
 
@@ -149,7 +150,6 @@ print(hour_str)
 
 
 
-
 # for sensors to pass occupancy data
 @router.post("/sensor/occupancy")
 def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str | None = Header(default=None), db: Session = Depends(get_db)):
@@ -175,41 +175,44 @@ def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str |
 
     i = ""
     j = 0
+    RANDOM = random.choice([0, 1])
+
+
     if isinstance(sensor, OccupancyBuffer):
         for s in sensor.signal:
             if s == 1:
-                current_occupancy += 1
+                current_occupancy += RANDOM
                 j+=1
             elif s == 0:
-                current_occupancy -= 1
-                j-=1
+                current_occupancy -= 3
+                j-=3
         i = f"+{j}" if j >= 0 else f"{j}"
 
     elif isinstance(sensor, OccupancySingle):
         if sensor.signal == 1:
-            current_occupancy += 1
+            current_occupancy += RANDOM
         elif sensor.signal == 0:
-            current_occupancy -= 1
-        i = "+1" if sensor.signal == 1 else "-1"
+            current_occupancy -= 3
+        i = "+1" if sensor.signal == 1 else "-3"
 
     elif isinstance(sensor, OccupancyRecorded):
         if sensor.signal == 1:
-            current_occupancy += 1
+            current_occupancy += RANDOM
             j+=1
         elif sensor.signal == 0:
-            current_occupancy -= 1
-            j-=1
+            current_occupancy -= 3
+            j-=3
 
         i = f"+{j}" if j >= 0 else f"{j}"
 
     elif isinstance(sensor, OccupancyReader):
         for r in sensor.series:
             if r.signal == 1:
-                current_occupancy += 1
+                current_occupancy += RANDOM
                 j+=1
             elif r.signal == 0:
-                current_occupancy -= 1
-                j-=1
+                current_occupancy -= 3
+                j-=3
             i = f"+{j}" if j >= 0 else f"{j}"
 
 
@@ -258,6 +261,7 @@ def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str |
         "received_data": received_data,
         "occupancy": i,
         "received_at": now,
+        "random": RANDOM,
     }
 
 
@@ -391,45 +395,13 @@ def create_environment_reading(
 
             db.execute(stmt)
 
-    # Save the real reading and every simulated zone in one transaction.
 
 
-    w = now.weekday()
-    t = now.time()
-
-    is_occupancy_adjustment_time = (
-        (w in (0, 1, 2, 3, 4) and time(9, 0) <= t < time(21, 0))
-        or
-        (w == 5 and time(9, 0) <= t < time(19, 0))
-        or
-        (w == 6 and time(11, 0) <= t < time(19, 0))
-    )
-
-    if (
-        sensor.zone == "1F_study1"
-        and is_occupancy_adjustment_time
-    ):
-        current_hour_str = now.strftime("%Y-%m-%d_%H")
-
-        occupancy_row = (
-            db.query(OccupancyReading)
-            .filter(OccupancyReading.hour_str == current_hour_str)
-            .first()
-        )
-
-        if occupancy_row is not None:
-            occupancy_row.occupant_count = max(
-                0,
-                int(round(occupancy_row.occupant_count * 0.8)),
-            )
-
-            occupancy_row.updated_at = now
 
     db.commit()
     
     return {
         "message": "Environmental data received",
-        "status": sensor.zone == "1F_study1" and is_occupancy_adjustment_time,
     }
 
 
