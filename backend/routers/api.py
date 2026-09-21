@@ -175,8 +175,8 @@ def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str |
 
     i = ""
     j = 0
-    RANDOM = random.choice([0, 1])
-    MINUS = 2
+    RANDOM = random.choices([1, 0], weights=[0.9, 0.1], k=1)[0]
+    MINUS = random.choices([1, 2], weights=[0.9, 0.1], k=1)[0]
 
     if isinstance(sensor, OccupancyBuffer):
         for s in sensor.signal:
