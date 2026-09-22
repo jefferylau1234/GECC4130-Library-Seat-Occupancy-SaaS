@@ -40,7 +40,7 @@ const int PIN_LED = 2;
 // Sensor thresholds
 constexpr float MAX_DISTANCE_CM = 92.0f;                              // HC-SR04 max
 constexpr float DETECT_RATIO = 0.8f;                                  // detection threshold as ratio of max (you used detect_bounder * max_distance)
-constexpr float DETECT_DISTANCE_CM = 75.0f;  // computed detection distance
+constexpr float DETECT_DISTANCE_CM = 110.0f;  // computed detection distance
 
 // Timing and buffer
 //const unsigned long MIN_TIME_DIFF_US = 300000UL;       // min separation between valid records in microseconds (1 s)
