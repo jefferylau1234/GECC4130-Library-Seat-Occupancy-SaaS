@@ -84,7 +84,7 @@ class OccupancyReader(BaseModel):
 
 
 
-OccupancyReadingCreate = Union[OccupancySingle, OccupancyBuffer, OccupancyReader, OccupancyRecorded]
+OccupancyPayload = Union[OccupancySingle, OccupancyBuffer, OccupancyReader, OccupancyRecorded, List[OccupancyRecorded]]
 
 
 class EnvironmentalReadingCreate(BaseModel):
@@ -152,7 +152,7 @@ print(hour_str)
 
 # for sensors to pass occupancy data
 @router.post("/sensor/occupancy")
-def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+def create_occupancy_reading(sensor: OccupancyPayload, x_sensor_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     verify_sensor_key(x_sensor_key)
 
     now = datetime.now(HKT)
@@ -178,14 +178,26 @@ def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str |
     RANDOM = random.choices([1, 0], weights=[0.9, 0.1], k=1)[0]
     MINUS = random.choices([1, 2], weights=[0.8, 0.2], k=1)[0]
 
-    if isinstance(sensor, OccupancyBuffer):
+    if isinstance(sensor, list):
+        for r in sensor:
+            if r.signal == 1:
+                current_occupancy += RANDOM
+                j += RANDOM
+            elif r.signal == 0:
+                current_occupancy -= MINUS
+                j -= MINUS
+
+        i = f"+{j}" if j >= 0 else f"{j}"
+
+    elif isinstance(sensor, OccupancyBuffer):
         for s in sensor.signal:
             if s == 1:
                 current_occupancy += RANDOM
-                j+= RANDOM
+                j += RANDOM
             elif s == 0:
                 current_occupancy -= MINUS
-                j-=MINUS
+                j -= MINUS
+
         i = f"+{j}" if j >= 0 else f"{j}"
 
     elif isinstance(sensor, OccupancySingle):
@@ -249,11 +261,14 @@ def create_occupancy_reading(sensor: OccupancyReadingCreate, x_sensor_key: str |
     db.execute(stmt)
     db.commit()
 
-    received_data = (
-        [r.signal for r in sensor.series]
-        if isinstance(sensor, OccupancyReader)
-        else sensor.signal
-    )
+    if isinstance(sensor, list):
+        received_data = [r.signal for r in sensor]
+
+    elif isinstance(sensor, OccupancyReader):
+        received_data = [r.signal for r in sensor.series]
+
+    else:
+        received_data = sensor.signal
 
     return {
         "message": "Occupancy reading received",
