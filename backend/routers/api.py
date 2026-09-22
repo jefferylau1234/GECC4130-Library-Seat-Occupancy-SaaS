@@ -178,7 +178,7 @@ def create_occupancy_reading(sensor: OccupancyPayload, x_sensor_key: str | None 
 
     # random.choices([1, 0], weights=[0.9, 0.1], k=1)[0]
     RANDOM = 1                  
-    MINUS = 1
+    MINUS = random.choices([1, 2], weights=[0.9, 0.1], k=1)[0]
     # random.choices([1, 2], weights=[0.8, 0.2], k=1)[0]
 
     if isinstance(sensor, list):
