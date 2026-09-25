@@ -1260,7 +1260,7 @@ function getPreferenceScore(
 
 
 
-
+closeModal()
 
 document.addEventListener("DOMContentLoaded", async () => {  
 
