@@ -5,3 +5,6 @@ sqlalchemy
 psycopg[binary]
 python-dotenv
 psycopg2-binary
+numpy
+pandas
+lightgbm
