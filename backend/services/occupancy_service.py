@@ -22,15 +22,15 @@ def get_current_occupancy_data(db, OccupancyReading):
 
     current_occupancy = row.occupant_count if date == today else 0
 
-    if current_occupancy >= 500:
+    if current_occupancy >= 400:
         message = "Overload 🌋💀"
-    elif current_occupancy >= 400:
-        message = "Very crowded 🤯"
     elif current_occupancy >= 300:
+        message = "Very crowded 🤯"
+    elif current_occupancy >= 175:
         message = "Busy now 🔥"
-    elif current_occupancy >= 200:
-        message = "Moderately busy 🐝"
     elif current_occupancy >= 100:
+        message = "Moderately busy 🐝"
+    elif current_occupancy >= 50:
         message = "Getting active ☕"
     else:
         message = "Available 🏝️"
