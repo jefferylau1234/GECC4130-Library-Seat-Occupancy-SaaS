@@ -1450,7 +1450,7 @@ save.addEventListener("click", async () => {
 
 
 
-const TOTAL_CAPACITY = 500;
+const TOTAL_CAPACITY = 400;
 
 function getOccupancyBarColor(percent) {
   if (percent < 60) {
