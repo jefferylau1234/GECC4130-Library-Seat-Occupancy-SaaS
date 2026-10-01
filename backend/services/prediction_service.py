@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from backend.data_structure import OccupancyStore, ForecastPoint
-from backend.model.forecast import forecast_today_response
+from backend.model.forecast import forecast_today as forecast_today_response
 
 # services determine the response data logic
 
