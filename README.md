@@ -7,6 +7,10 @@ A course project for **GECC4130 Senior Seminar** focused on the CUHK Chung Chi C
 The project investigates how library entrance and exit records can be transformed into occupancy-related time-series data for analysis and short-term forecasting.[2][1]
 The intended outcome is a student-facing dashboard that visualizes historical usage and provides practical guidance on lower-load study periods or spaces.[2][1]
 
+## URL
+https://cc-library-dashboard-ecegewg6bqfracfd.austriaeast-01.azurewebsites.net/
+
+
 ## Objectives
 
 - Analyze historical entrance and exit flow patterns at the CUHK CC Library.[2]
