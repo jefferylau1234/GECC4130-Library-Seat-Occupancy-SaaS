@@ -8,3 +8,4 @@ psycopg2-binary
 numpy
 pandas
 lightgbm
+APScheduler>=3.10,<4
