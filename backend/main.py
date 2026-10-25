@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(
         increment_occupancy,
         trigger="interval",
-        seconds=50,
+        seconds=30,
         id="occupancy_plus_one",
         replace_existing=True,
         max_instances=1,
