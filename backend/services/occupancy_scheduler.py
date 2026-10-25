@@ -16,7 +16,14 @@ HKT = ZoneInfo("Asia/Hong_Kong")
 def increment_occupancy():
     now = datetime.now(HKT)
 
-    if not time(8, 20) <= now.time() < time(22, 0):
+    w = now.weekday()
+    t = now.time()
+
+    if w in (0, 1, 2, 3, 4) and not (time(8, 20) < t < time(22, 0)):
+        return
+    elif w == 5 and not (time(8, 20) < t < time(19, 0)):
+        return
+    elif w == 6 and not (time(11, 0) < t < time(19, 0)):
         return
 
 
