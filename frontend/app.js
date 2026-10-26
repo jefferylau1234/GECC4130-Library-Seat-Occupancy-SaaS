@@ -209,6 +209,46 @@ async function loadDashboard(){
 }
 
 
+const dashboardEvents = new EventSource(
+    `${API_BASE}/dashboard/events`
+);
+
+dashboardEvents.onopen = () => {
+    console.log("Dashboard SSE connected");
+
+    // Initial snapshot, or refresh after reconnecting.
+    loadDashboard();
+};
+
+dashboardEvents.addEventListener("occupancy", (event) => {
+    try {
+        const data = JSON.parse(event.data);
+
+        console.log("Occupancy update received:", data);
+
+        current_occupancy.textContent =
+            `${data.current_occupancy}+ `;
+
+        occupancy_mes.textContent =
+            data.message ?? "";
+
+        updateOccupancy(data.current_occupancy);
+    } catch (error) {
+        console.error("Failed to process occupancy event:", error);
+    }
+});
+
+dashboardEvents.onerror = () => {
+    console.warn(
+        "Dashboard SSE interrupted. Current state:",
+        dashboardEvents.readyState
+    );
+
+    // Let EventSource handle reconnection.
+    // Do not create another EventSource here.
+};
+
+
 // const timeID = setInterval(loadDashboard, 10000);   // 10 seconds, 1 update
 
 
@@ -738,7 +778,6 @@ const verticalLinePlugin = {
 Chart.register(verticalLinePlugin);
 
 
-loadDashboard();
 initCharts();
 
 

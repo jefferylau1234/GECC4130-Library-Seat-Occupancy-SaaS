@@ -146,13 +146,14 @@ print(hour_str)
 
 
 
+from fastapi import BackgroundTasks
 
-
+from backend.realtime import publish_occupancy
 
 
 # for sensors to pass occupancy data
 @router.post("/sensor/occupancy")
-def create_occupancy_reading(sensor: OccupancyPayload, x_sensor_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+def create_occupancy_reading(sensor: OccupancyPayload, background_tasks: BackgroundTasks, x_sensor_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     verify_sensor_key(x_sensor_key)
 
     now = datetime.now(HKT)
@@ -272,6 +273,15 @@ def create_occupancy_reading(sensor: OccupancyPayload, x_sensor_key: str | None 
 
     else:
         received_data = sensor.signal
+
+
+
+    background_tasks.add_task(
+        publish_occupancy,
+        current_occupancy=current_occupancy,
+        message="Occupancy updated",
+    )
+
 
     return {
         "message": "Occupancy reading received",

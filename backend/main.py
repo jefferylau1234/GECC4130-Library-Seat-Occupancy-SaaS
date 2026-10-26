@@ -13,6 +13,8 @@ from backend.routers.check import router as check_router
 from backend.db.db import Base, engine
 from backend.services.occupancy_scheduler import increment_occupancy
 
+from backend.realtime import router as realtime_router
+
 
 # 必須先定義，再傳入 FastAPI。
 @asynccontextmanager
@@ -65,7 +67,7 @@ app.include_router(prediction_router)
 app.include_router(api_router)
 app.include_router(env_router)
 app.include_router(check_router)
-
+app.include_router(realtime_router)
 
 @app.get("/health")
 def health():
