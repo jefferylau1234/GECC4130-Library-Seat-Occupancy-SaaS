@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(
         increment_occupancy,
         trigger="interval",
-        seconds=60*10,
+        seconds=60*6,
         id="occupancy_plus_one",
         replace_existing=True,
         max_instances=1,
@@ -74,7 +74,6 @@ def health():
     return {"status": "ok"}
 
 
-# 放在 API routes 後面。
 app.frontend(
     "/",
     directory="frontend",
