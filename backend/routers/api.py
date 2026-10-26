@@ -276,10 +276,40 @@ def create_occupancy_reading(sensor: OccupancyPayload, background_tasks: Backgro
 
 
 
+
+
+    if current_occupancy >= 400:
+        message = "Overload 🌋💀"
+    elif current_occupancy >= 300:
+        message = "Very crowded 🤯"
+    elif current_occupancy >= 175:
+        message = "Busy now 🔥"
+    elif current_occupancy >= 100:
+        message = "Moderately busy 🐝"
+    elif current_occupancy >= 50:
+        message = "Getting active ☕"
+    else:
+        message = "Available 🏝️"
+
+    w = now.weekday()
+    t = now.time()
+
+
+    if w in (0, 1, 2, 3, 4) and not (time(8, 20) < t < time(22, 0)):
+        current_occupancy = 0
+        message = "Library is closed 😭"
+    elif w == 5 and not (time(8, 20) < t < time(19, 0)):
+        current_occupancy = 0
+        message = "Library is closed 😭"
+    elif w == 6 and not (time(11, 0) < t < time(19, 0)):
+        current_occupancy = 0
+        message = "Library is closed 😭"
+
+
     background_tasks.add_task(
         publish_occupancy,
         current_occupancy=current_occupancy,
-        message="Occupancy updated",
+        message = message,
     )
 
 
