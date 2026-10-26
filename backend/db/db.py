@@ -46,7 +46,7 @@ class EnvironmentalReading(Base):
 
 class OccupancyRecord(Base):
     __tablename__ = "occupancy_records"
-    recorded_at: Mapped[str] = mapped_column(String(30), primary_key = True)
+    recorded_at: Mapped[str] = mapped_column(String(30), primary_key = False)
     occupant_change: Mapped[str] = mapped_column(String(13), nullable=False)
     occupant_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -61,7 +61,7 @@ class Sensors(Base):
 
 class Visiting(Base):
     __tablename__ = "visiting"
-    recorded_at: Mapped[str] = mapped_column(String(40), primary_key = True)
+    recorded_at: Mapped[str] = mapped_column(String(40), primary_key = False)
     visiting: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
 
