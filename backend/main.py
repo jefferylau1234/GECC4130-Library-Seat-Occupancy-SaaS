@@ -16,7 +16,6 @@ from backend.services.occupancy_scheduler import increment_occupancy
 from backend.realtime import router as realtime_router
 
 
-# 必須先定義，再傳入 FastAPI。
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
@@ -28,7 +27,7 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(
         increment_occupancy,
         trigger="interval",
-        seconds=60*6,
+        seconds=55,
         id="occupancy_plus_one",
         replace_existing=True,
         max_instances=1,
@@ -52,7 +51,6 @@ app = FastAPI(
 )
 
 
-# 保留你現有的 CORS 設定。
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
