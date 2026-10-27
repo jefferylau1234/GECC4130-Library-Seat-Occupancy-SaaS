@@ -29,12 +29,10 @@ def increment_occupancy():
 
     PLUS = 1
 
-    if now.time()>= time(13, 0):
-        PLUS = random.choices([1, 0], weights=[0.9, 0.1], k=1)[0]
-
     if now.time()>= time(15, 0):
-        PLUS = random.choices([1, 0], weights=[0.6, 0.4], k=1)[0]
-
+        PLUS = random.choices([1, 0], weights=[0.4, 0.6], k=1)[0]
+    elif (time(113, 0) < now.time() < time(15, 0)):
+        PLUS = random.choices([1, 0], weights=[0.9, 0.1], k=1)[0]
 
     hour_str = now.strftime("%Y-%m-%d_%H")
     day_start = now.strftime("%Y-%m-%d_00")
