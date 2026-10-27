@@ -187,6 +187,9 @@ def create_occupancy_reading(sensor: OccupancyPayload, background_tasks: Backgro
         MINUS = random.choices([1, 0], weights=[0.9, 0.1], k=1)[0]
 
 
+    if now.time()>= time(20, 0):
+        MINUS = 1
+
     if isinstance(sensor, list):
         for r in sensor:
             if r.signal == 1:
