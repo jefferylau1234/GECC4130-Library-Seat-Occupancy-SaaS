@@ -14,7 +14,7 @@ from backend.db.db import Base, engine
 from backend.services.occupancy_scheduler import increment_occupancy
 
 from backend.realtime import router as realtime_router
-
+from backend.jobs.forecast_cron import update_forecast_files
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,6 +24,7 @@ async def lifespan(app: FastAPI):
         timezone="Asia/Hong_Kong",
     )
 
+    # Existing occupancy job.
     scheduler.add_job(
         increment_occupancy,
         trigger="interval",
@@ -34,14 +35,46 @@ async def lifespan(app: FastAPI):
         coalesce=True,
     )
 
+    # Generate today's and tomorrow's forecast JSON files
+    # every day at 00:00 Hong Kong time.
+    scheduler.add_job(
+        update_forecast_files,
+        trigger="cron",
+        hour=0,
+        minute=0,
+        second=0,
+        timezone="Asia/Hong_Kong",
+        id="daily_library_forecast",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3600,
+    )
+
     scheduler.start()
-    print("[Scheduler] Started: occupancy +1 every minute", flush=True)
+
+    app.state.scheduler = scheduler
+
+    print(
+        "[Scheduler] Started: occupancy +1 every 55 seconds",
+        flush=True,
+    )
+
+    print(
+        "[Scheduler] Started: forecasts daily at 00:00 HKT",
+        flush=True,
+    )
 
     try:
         yield
+
     finally:
         scheduler.shutdown(wait=True)
-        print("[Scheduler] Stopped", flush=True)
+
+        print(
+            "[Scheduler] Stopped",
+            flush=True,
+        )
 
 
 app = FastAPI(

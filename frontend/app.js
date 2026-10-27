@@ -178,30 +178,25 @@ async function loadDashboard(){
     isLoadingDashboard = true;              // loading lock
 
     try{
-    const [occupancyRes, predictionRes] = await Promise.all([
-      fetch(`${API_BASE}/occupancy/current`),
-      fetch(`${API_BASE}/prediction/next-hour`)
+    const [occupancyRes] = await Promise.all([
+      fetch(`${API_BASE}/occupancy/current`)
     ]);
 
-    if (!occupancyRes.ok || !predictionRes.ok) {
+    if (!occupancyRes.ok) {
       throw new Error("API request failed");
     }
 
     const occupancyJSON = await occupancyRes.json();
-    const predictionJSON = await predictionRes.json();
 
     current_occupancy.textContent = `${occupancyJSON.current_occupancy}+ `;
-    predicted_occupancy.textContent = `${predictionJSON.predicted_occupancy}+ `;
 
     occupancy_mes.textContent = `${occupancyJSON.message} `;
-    prediction_mes.textContent = `coming soon 🔜`; // `Predicted peak at ${predictionJSON.predicted_peak} `;
 
     updateOccupancy(occupancyJSON.current_occupancy);
 
     } catch (error){
         console.error(error);
         occupancy_mes.textContent = "Failed to load data";
-        prediction_mes.textContent = "Failed to load data";
 
     } finally {
         isLoadingDashboard = false;
@@ -604,112 +599,6 @@ verticalLinePlugin: {
         }});
 
 
-
-
-    forecastChart = new Chart(forecastCtx, {
-    type: "line",
-    data: {
-        labels: ["12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM", "6 PM"],
-        datasets: [
-        {
-            label: "Forecast",
-            data: [18, 17, 16, 20, 78, 110, 130, 100],
-            borderColor: "#c8b8ff",
-            backgroundColor: (context) => {
-            const { chart } = context;
-            const { ctx, chartArea } = chart;
-            if (!chartArea) return "rgba(200, 184, 255, 0.24)";
-            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            gradient.addColorStop(0, "rgba(200, 184, 255, 0.42)");
-            gradient.addColorStop(1, "rgba(200, 184, 255, 0.06)");
-            return gradient;
-            },
-            fill: true,
-            tension: 0.42,
-            borderWidth: 1,
-            pointRadius: [0, 0, 0, 0, 4, 0, 0],
-            pointHoverRadius: 4,
-            pointBackgroundColor: "#ffffff",
-            pointBorderColor: "#c8b8ff",
-            pointBorderWidth: 1,
-            spanGaps: false
-        }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        layout: {
-        padding: { top: 4, right: 6, bottom: 0, left: 0 }
-        },
-        plugins: {
-        legend: {
-            position: "top",
-            align: "end",
-            labels: {
-            color: "#f7f4ff",
-            usePointStyle: true,
-            pointStyle: "circle",
-            boxWidth: 6,
-            boxHeight: 6,
-            padding: 10,
-            font: {
-                size: 10,
-                weight: "600"
-            }
-            }
-        },
-        tooltip: {
-            enabled: true
-        },
-        verticalLinePlugin: {
-            index: 4,          // 4 PM
-            datasetIndex: 0,
-            color: "rgba(255,255,255,0.78)"
-        }
-        },
-        scales: {
-        x: {
-            offset: false,
-            ticks: {
-            color: "rgba(255,255,255,0.9)",
-            font: {
-                size: 9,
-                weight: "600"
-            },
-            maxRotation: 0,
-            minRotation: 0,
-            padding: 6,
-            autoSkip: false
-            },
-            grid: {
-            drawOnChartArea: false,
-            drawTicks: true,
-            tickLength: 8,
-            color: "rgba(255,255,255,0.9)",
-            lineWidth: 1
-            },
-            border: {
-            display: true,
-            color: "rgba(255,255,255,0.95)",
-            width: 1
-            }
-        },
-        y: {
-            display: false,
-            beginAtZero: true,
-            grid: { display: false },
-            border: { display: false }
-        }
-        },
-        elements: {
-        line: {
-            borderWidth: 1
-        }
-        }
-    }
-    });
-
     } catch (error){
         console.error(error);
     } 
@@ -717,6 +606,346 @@ verticalLinePlugin: {
 
 
 }
+
+let forecastRequestVersion = 0;
+
+async function loadForecastChart(day = "today") {
+    const requestVersion = ++forecastRequestVersion;
+    const numberElement =
+        document.getElementById("predicted_occupancy");
+
+    const messageElement =
+        document.getElementById("forecast_mes");
+
+    try {
+        messageElement.textContent = "...";
+
+        const response = await fetch(
+            `${API_BASE}/prediction/forecast?day=${day}`,
+            {
+                cache: "no-store",
+            }
+        );
+
+        if (!response.ok) {
+            const errorBody = await response
+                .json()
+                .catch(() => null);
+
+            const detail =
+                typeof errorBody?.detail === "string"
+                    ? errorBody.detail
+                    : `Forecast API returned ${response.status}`;
+
+            throw new Error(detail);
+        }
+
+        const forecast = await response.json();
+
+        if (requestVersion !== forecastRequestVersion) {
+            return;
+        }
+
+        if (
+            !Array.isArray(forecast.series) ||
+            forecast.series.length === 0
+        ) {
+            throw new Error("Forecast series is empty or invalid");
+        }
+
+        const hasInvalidPoint = forecast.series.some(
+            (point) =>
+                typeof point.time !== "string" ||
+                !/^(?:[01]\d|2[0-3]):00$/.test(point.time) ||
+                !Number.isFinite(point.occupancy) ||
+                point.occupancy < 0
+        );
+
+        if (hasInvalidPoint) {
+            throw new Error("Forecast contains invalid data");
+        }
+
+        // Same 7 AM–11 PM display range as the occupancy chart.
+        const chartHours = getTodayChartHours();
+
+        const labels = chartHours.map(
+            (hour) =>
+                `${String(hour).padStart(2, "0")}:00`
+        );
+
+        const forecastByTime = new Map(
+            forecast.series.map(
+                (point) => [point.time, point.occupancy]
+            )
+        );
+
+        // Keep missing hours as gaps, not invented zeros.
+        // Explicit zeros from the API remain zero.
+        const forecastData = labels.map(
+            (time) => forecastByTime.get(time) ?? null
+        );
+
+        const peak = forecast.peak;
+
+        if (
+            peak != null &&
+            (
+                typeof peak.time !== "string" ||
+                !Number.isFinite(peak.occupancy) ||
+                peak.occupancy < 0
+            )
+        ) {
+            throw new Error("Forecast peak is invalid");
+        }
+
+        const currentHourHKT = Number(
+            new Intl.DateTimeFormat("en-US", {
+                timeZone: "Asia/Hong_Kong",
+                hour: "2-digit",
+                hourCycle: "h23",
+            }).format(new Date())
+        );
+
+        const currentHourIndex =
+            chartHours.indexOf(currentHourHKT);
+
+        const markerIndex =
+            currentHourIndex >= 0 &&
+            Number.isFinite(forecastData[currentHourIndex])
+                ? currentHourIndex
+                : -1;
+
+        const validValues = forecastData.filter(
+            Number.isFinite
+        );
+
+        const yMax = Math.max(
+            50,
+            Math.ceil(
+                Math.max(0, ...validValues) * 1.2
+            )
+        );
+
+        // Destroy any earlier chart using this canvas.
+        const existingChart = Chart.getChart(forecastCtx);
+
+        if (existingChart) {
+            existingChart.destroy();
+        }
+
+        forecastChart = new Chart(forecastCtx, {
+            type: "line",
+
+            data: {
+                labels,
+
+                datasets: [{
+                    label: "Forecast",
+
+                    data: forecastData,
+
+                    borderColor: "#c8b8ff",
+
+                    backgroundColor: (context) => {
+                        const { ctx, chartArea } =
+                            context.chart;
+
+                        if (!chartArea) {
+                            return "rgba(200, 184, 255, 0.24)";
+                        }
+
+                        const gradient =
+                            ctx.createLinearGradient(
+                                0,
+                                chartArea.top,
+                                0,
+                                chartArea.bottom
+                            );
+
+                        gradient.addColorStop(
+                            0,
+                            "rgba(200, 184, 255, 0.42)"
+                        );
+
+                        gradient.addColorStop(
+                            1,
+                            "rgba(200, 184, 255, 0.06)"
+                        );
+
+                        return gradient;
+                    },
+
+                    fill: true,
+                    tension: 0.42,
+                    borderWidth: 1,
+
+                    pointRadius: (context) =>
+                        context.dataIndex === markerIndex ? 5 : 0,
+
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: "#ffffff",
+                    pointBorderColor: "#c8b8ff",
+                    pointBorderWidth: 1,
+
+                    spanGaps: false,
+                }],
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                layout: {
+                    padding: {
+                        top: 4,
+                        right: 6,
+                        bottom: 0,
+                        left: 0,
+                    },
+                },
+
+                plugins: {
+                    legend: {
+                        position: "top",
+                        align: "end",
+
+                        labels: {
+                            color: "#f7f4ff",
+                            usePointStyle: true,
+                            pointStyle: "circle",
+
+                            boxWidth: 6,
+                            boxHeight: 6,
+                            padding: 10,
+
+                            font: {
+                                size: 10,
+                                weight: "600",
+                            },
+                        },
+                    },
+
+                    tooltip: {
+                        enabled: true,
+
+                        callbacks: {
+                            title: (items) =>
+                                items.length
+                                    ? formatHour(
+                                        chartHours[
+                                            items[0].dataIndex
+                                        ]
+                                    )
+                                    : "",
+
+                            label: (context) =>
+                                `Forecast: ${context.parsed.y} people`,
+                        },
+                    },
+
+                    verticalLinePlugin: {
+                        index: markerIndex,
+                        datasetIndex: 0,
+                        color: "rgba(255,255,255,0.78)",
+                    },
+                },
+
+                scales: {
+                    x: {
+                        offset: false,
+
+                        ticks: {
+                            color: "rgba(255,255,255,0.9)",
+
+                            font: {
+                                size: 9,
+                                weight: "600",
+                            },
+
+                            maxRotation: 0,
+                            minRotation: 0,
+                            padding: 6,
+                            autoSkip: false,
+
+                            callback: function (value, index) {
+                                const hour = chartHours[index];
+
+                                return hour % 2 === 1
+                                    ? formatHour(hour)
+                                    : "";
+                            },
+                        },
+
+                        grid: {
+                            drawOnChartArea: false,
+                            drawTicks: true,
+                            tickLength: 8,
+                            color: "rgba(255,255,255,0.9)",
+                            lineWidth: 1,
+                        },
+
+                        border: {
+                            display: true,
+                            color: "rgba(255,255,255,0.95)",
+                            width: 1,
+                        },
+                    },
+
+                    y: {
+                        display: false,
+                        beginAtZero: true,
+                        suggestedMax: yMax,
+
+                        grid: {
+                            display: false,
+                        },
+
+                        border: {
+                            display: false,
+                        },
+                    },
+                },
+
+                elements: {
+                    line: {
+                        borderWidth: 1,
+                    },
+                },
+            },
+        });
+
+numberElement.textContent =
+    markerIndex >= 0
+        ? `${forecastData[markerIndex]}+`
+        : "—";
+
+messageElement.textContent = peak
+    ? `Predicted peak at ${formatHour(
+        Number(peak.time.split(":")[0])
+    ).toLowerCase()}`
+    : "No opening hours forecast";
+
+        console.log("Today's forecast loaded:", {
+            date: forecast.date,
+            generatedAt: forecast.generated_at,
+            peak: forecast.peak,
+        });
+
+    } catch (error) {
+        console.error(
+            "Failed to load today's forecast:",
+            error
+        );
+
+        numberElement.textContent = "—";
+
+        messageElement.textContent =
+            "Forecast unavailable";
+
+    }
+}
+
+
 
 
 const verticalLinePlugin = {
@@ -778,11 +1007,67 @@ const verticalLinePlugin = {
 Chart.register(verticalLinePlugin);
 
 
+
+
+let selectedForecastDay = "today";
+
+const todayButton = document.getElementById("td");
+const tomorrowButton = document.getElementById("tmr");
+
+const forecastToggle =
+    todayButton.closest(".forecast-toggle");
+
+
+function updateForecastToggle(day) {
+    const isToday = day === "today";
+
+    forecastToggle.dataset.day = day;
+
+    todayButton.classList.toggle("active", isToday);
+    tomorrowButton.classList.toggle("active", !isToday);
+
+    todayButton.setAttribute(
+        "aria-pressed",
+        String(isToday)
+    );
+
+    tomorrowButton.setAttribute(
+        "aria-pressed",
+        String(!isToday)
+    );
+}
+
+
+function switchForecastDay(day) {
+    if (day === selectedForecastDay) {
+        return;
+    }
+
+    selectedForecastDay = day;
+
+    updateForecastToggle(day);
+    loadForecastChart(day);
+}
+
+
+todayButton.addEventListener("click", () => {
+    switchForecastDay("today");
+});
+
+tomorrowButton.addEventListener("click", () => {
+    switchForecastDay("tomorrow");
+});
+
+
+
+updateForecastToggle("today");
+
+
 initCharts();
+loadForecastChart("today");
 
 
-
-
+Chart.register(verticalLinePlugin);
 
 
 

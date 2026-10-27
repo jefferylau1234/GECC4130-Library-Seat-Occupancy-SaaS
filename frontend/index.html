@@ -72,6 +72,39 @@
             </div>
             
         </div>
+
+    <div
+        class="forecast-toggle"
+        data-day="today"
+        role="group"
+        aria-label="Forecast day"
+    >
+        <span
+            class="forecast-toggle-slider"
+            aria-hidden="true"
+        ></span>
+
+        <button
+            type="button"
+            class="forecast-toggle-btn active"
+            data-forecast-day="today"
+            aria-pressed="true"
+            id = "td"
+        >
+            Today
+        </button>
+
+        <button
+            type="button"
+            class="forecast-toggle-btn"
+            data-forecast-day="tomorrow"
+            aria-pressed="false"
+            id = "tmr"
+        >
+            Tomorrow
+        </button>
+    </div>
+
         
     </div>
 
