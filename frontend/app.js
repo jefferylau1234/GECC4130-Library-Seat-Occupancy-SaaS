@@ -618,7 +618,7 @@ async function loadForecastChart(day = "today") {
         document.getElementById("forecast_mes");
 
     try {
-        messageElement.textContent = "...";
+        messageElement.textContent = "loading...";
 
         const response = await fetch(
             `${API_BASE}/prediction/forecast?day=${day}`,
@@ -917,7 +917,7 @@ async function loadForecastChart(day = "today") {
 numberElement.textContent =
     markerIndex >= 0
         ? `${forecastData[markerIndex]}+`
-        : "—";
+        : "0+";
 
 messageElement.textContent = peak
     ? `Predicted peak at ${formatHour(
