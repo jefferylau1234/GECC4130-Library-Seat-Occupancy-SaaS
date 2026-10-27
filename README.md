@@ -9,7 +9,7 @@ The intended outcome is a student-facing dashboard that visualizes historical us
 
 ## URL
 https://cc-library-dashboard-ecegewg6bqfracfd.austriaeast-01.azurewebsites.net/
-
+python -m backend.jobs.forecast_cron --once
 
 ## Objectives
 
