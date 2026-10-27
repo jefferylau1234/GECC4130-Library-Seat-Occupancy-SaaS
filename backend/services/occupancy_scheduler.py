@@ -78,7 +78,7 @@ def increment_occupancy():
                 db.execute(
                     insert(OccupancyRecord).values(
                         recorded_at=formatted_time,
-                        occupant_change="+1 system",
+                        occupant_change=f"+{PLUS} system",
                         occupant_count=current_occupancy,
                     )
                 )
