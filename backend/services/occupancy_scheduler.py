@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from backend.db.db import engine, OccupancyReading, OccupancyRecord
 from datetime import datetime, time
+import random
 
 logger = logging.getLogger(__name__)
 HKT = ZoneInfo("Asia/Hong_Kong")
@@ -25,6 +26,12 @@ def increment_occupancy():
         return
     elif w == 6 and not (time(11, 0) < t < time(19, 0)):
         return
+
+    PLUS = 1
+
+    # if now.time()>= time(15, 0):
+    #     PLUS = random.choices([1, 0], weights=[0.9, 0.1], k=1)[0]
+
 
 
     hour_str = now.strftime("%Y-%m-%d_%H")
@@ -50,7 +57,7 @@ def increment_occupancy():
 
                 stmt = insert(OccupancyReading).values(
                     hour_str=hour_str,
-                    occupant_count=starting_count + 1,
+                    occupant_count=starting_count + PLUS,
                     updated_at=now,
                 )
 
@@ -58,7 +65,7 @@ def increment_occupancy():
                     index_elements=[OccupancyReading.hour_str],
                     set_={
                         "occupant_count": (
-                            OccupancyReading.occupant_count + 1
+                            OccupancyReading.occupant_count + PLUS
                         ),
                         "updated_at": now,
                     },

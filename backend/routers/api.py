@@ -283,7 +283,7 @@ def create_occupancy_reading(sensor: OccupancyPayload, background_tasks: Backgro
 
 
 
-    if current_occupancy >= 400:
+    if current_occupancy >= 450:
         message = "Overload 🌋💀"
     elif current_occupancy >= 300:
         message = "Very crowded 🤯"

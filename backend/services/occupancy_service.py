@@ -22,7 +22,7 @@ def get_current_occupancy_data(db, OccupancyReading):
 
     current_occupancy = row.occupant_count if date == today else 0
 
-    if current_occupancy >= 400:
+    if current_occupancy >= 450:
         message = "Overload 🌋💀"
     elif current_occupancy >= 300:
         message = "Very crowded 🤯"
