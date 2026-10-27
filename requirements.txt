@@ -8,5 +8,6 @@ psycopg2-binary
 numpy
 pandas
 lightgbm
+scikit-learn
 APScheduler>=3.10,<4
 tzdata
