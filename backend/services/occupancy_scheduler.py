@@ -32,7 +32,7 @@ def increment_occupancy():
     if now.time()>= time(20, 0):
         PLUS = 0
     elif now.time()>= time(15, 0):
-        PLUS = random.choices([1, 0], weights=[0.4, 0.6], k=1)[0]
+        PLUS = random.choices([1, 0], weights=[0.3, 0.7], k=1)[0]
     elif (time(13, 0) < now.time() < time(15, 0)):
         PLUS = random.choices([1, 0], weights=[0.9, 0.1], k=1)[0]
     
