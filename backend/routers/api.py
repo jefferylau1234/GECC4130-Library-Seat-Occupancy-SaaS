@@ -183,6 +183,10 @@ def create_occupancy_reading(sensor: OccupancyPayload, background_tasks: Backgro
     # random.choices([1, 2], weights=[0.9, 0.1], k=1)[0]
 
 
+    if now.time() <= time(12, 0):
+        MINUS = random.choices([1, 0], weights=[0.8, 0.2], k=1)[0]
+
+
     if now.time()>= time(15, 0):
         MINUS = random.choices([1, 0], weights=[0.9, 0.1], k=1)[0]
 
