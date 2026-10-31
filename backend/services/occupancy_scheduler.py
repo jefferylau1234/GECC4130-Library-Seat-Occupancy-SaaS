@@ -36,7 +36,7 @@ def increment_occupancy():
     elif (time(13, 0) < now.time() < time(15, 0)):
         PLUS = 1
     elif now.time() <= time(11, 0):
-        PLUS = random.choices([1, 2], weights=[0.9, 0.1], k=1)[0]
+        PLUS = random.choices([1, 2], weights=[0.8, 0.2], k=1)[0]
 
     hour_str = now.strftime("%Y-%m-%d_%H")
     day_start = now.strftime("%Y-%m-%d_00")
