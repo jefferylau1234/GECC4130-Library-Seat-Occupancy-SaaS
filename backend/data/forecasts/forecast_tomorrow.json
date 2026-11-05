@@ -1,18 +1,18 @@
 {
-  "date": "2026-11-05",
+  "date": "2026-11-06",
   "timezone": "Asia/Hong_Kong",
-  "generated_at": "2026-11-04T13:53:19.000528+08:00",
-  "forecast_cutoff": "2026-11-05T00:00:00+08:00",
+  "generated_at": "2026-11-05T17:19:19.918760+08:00",
+  "forecast_cutoff": "2026-11-06T00:00:00+08:00",
   "model": "lightgbm",
   "source": "database",
   "target_definition": "occupant_count stored in each hour_str bucket; not entry count or assumed hourly average",
   "history": {
-    "rows_fetched": 656,
-    "rows_used": 593,
-    "days_used": 48,
+    "rows_fetched": 674,
+    "rows_used": 611,
+    "days_used": 49,
     "first_hour": "2026-09-18_14",
-    "last_hour": "2026-11-04_13",
-    "training_rows": 511
+    "last_hour": "2026-11-05_17",
+    "training_rows": 529
   },
   "capacity_limit": null,
   "series": [
@@ -58,72 +58,72 @@
     },
     {
       "time": "08:00",
-      "occupancy": 39,
+      "occupancy": 47,
       "is_open": true
     },
     {
       "time": "09:00",
-      "occupancy": 41,
+      "occupancy": 51,
       "is_open": true
     },
     {
       "time": "10:00",
-      "occupancy": 142,
+      "occupancy": 107,
       "is_open": true
     },
     {
       "time": "11:00",
-      "occupancy": 168,
+      "occupancy": 175,
       "is_open": true
     },
     {
       "time": "12:00",
-      "occupancy": 216,
+      "occupancy": 246,
       "is_open": true
     },
     {
       "time": "13:00",
-      "occupancy": 279,
+      "occupancy": 293,
       "is_open": true
     },
     {
       "time": "14:00",
-      "occupancy": 350,
+      "occupancy": 387,
       "is_open": true
     },
     {
       "time": "15:00",
-      "occupancy": 389,
+      "occupancy": 418,
       "is_open": true
     },
     {
       "time": "16:00",
-      "occupancy": 367,
+      "occupancy": 391,
       "is_open": true
     },
     {
       "time": "17:00",
-      "occupancy": 310,
+      "occupancy": 377,
       "is_open": true
     },
     {
       "time": "18:00",
-      "occupancy": 226,
+      "occupancy": 225,
       "is_open": true
     },
     {
       "time": "19:00",
-      "occupancy": 171,
+      "occupancy": 177,
       "is_open": true
     },
     {
       "time": "20:00",
-      "occupancy": 137,
+      "occupancy": 45,
       "is_open": true
     },
     {
       "time": "21:00",
-      "occupancy": 40,
+      "occupancy": 14,
       "is_open": true
     },
     {
@@ -139,7 +139,7 @@
   ],
   "peak": {
     "time": "15:00",
-    "occupancy": 389
+    "occupancy": 418
   },
   "warnings": [
     "Excluded 62 observations outside the configured opening-hour buckets.",
