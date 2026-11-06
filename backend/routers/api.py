@@ -406,6 +406,11 @@ def create_environment_reading(
     real_noise = sensor.noise_db - 10
     real_humidity = sensor.humidity
 
+    if sensor.zone == "1F_study5":
+        real_temperature = 24
+        real_noise = 46
+        real_humidity = 55
+
     # Save the actual submitted sensor data.
     stmt = insert(EnvironmentalReading).values(
         zone=sensor.zone,
