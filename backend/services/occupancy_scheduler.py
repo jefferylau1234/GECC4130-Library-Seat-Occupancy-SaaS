@@ -29,7 +29,7 @@ def increment_occupancy():
 
     PLUS = 1
 
-    if now.time()>= time(19, 0):
+    if now.time()>= time(19, 30):
         PLUS = 0
     elif now.time()>= time(15, 0):
         PLUS = random.choices([1, 0], weights=[0.7, 0.3], k=1)[0]
