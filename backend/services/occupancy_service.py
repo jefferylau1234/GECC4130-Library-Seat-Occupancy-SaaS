@@ -4,6 +4,18 @@ from zoneinfo import ZoneInfo
 
 HKT = ZoneInfo("Asia/Hong_Kong")
 
+
+
+def get_present_occupancy_data(db, Presentation):
+    row = db.query(Presentation).order_by(Presentation.id.desc()).first()
+    o = row.id
+    return {
+        "o": o,
+    }
+
+
+
+
 def get_current_occupancy_data(db, OccupancyReading):
 
     row = db.query(OccupancyReading).order_by(OccupancyReading.updated_at.desc()).first()

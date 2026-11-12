@@ -2,10 +2,10 @@
 from fastapi import APIRouter
 router = APIRouter(prefix="/occupancy", tags=["occupancy"])
 
-from backend.schemas.occupancy import OccupancyResponse, TodayOccupancyResponse, LastWeekOccupancyResponse
-from backend.services.occupancy_service import get_current_occupancy_data, get_today_occupancy_data, get_last_week_occupancy_data
+from backend.schemas.occupancy import OccupancyResponse, TodayOccupancyResponse, LastWeekOccupancyResponse, present
+from backend.services.occupancy_service import get_current_occupancy_data, get_today_occupancy_data, get_last_week_occupancy_data, get_present_occupancy_data
 
-from ..db.db import get_db, OccupancyReading
+from ..db.db import get_db, OccupancyReading, Presentation
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -13,6 +13,11 @@ from sqlalchemy.orm import Session
 def get_current_occupancy(db: Session = Depends(get_db)):
     return get_current_occupancy_data(db, OccupancyReading)
 
+
+
+@router.get("/present", response_model = present)
+def get_current_occupancy(db: Session = Depends(get_db)):
+    return get_present_occupancy_data(db, Presentation)
 
 
 

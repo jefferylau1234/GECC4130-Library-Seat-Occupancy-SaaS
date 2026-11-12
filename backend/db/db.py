@@ -67,8 +67,9 @@ class Visiting(Base):
     visiting: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
 
-
-
+class Presentation(Base):
+    __tablename__ = "presentation"
+    id: Mapped[int] = mapped_column(Integer, primary_key = True)
 
 
 

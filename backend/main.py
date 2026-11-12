@@ -112,3 +112,17 @@ app.frontend(
 )
 
 
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+
+@app.get("/present", include_in_schema=False)
+async def present_page():
+    return FileResponse(
+        FRONTEND_DIR / "present.html",
+        media_type="text/html",
+    )

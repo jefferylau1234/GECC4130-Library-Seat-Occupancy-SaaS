@@ -9,6 +9,10 @@ class OccupancyResponse(BaseModel):
     message: str
 
 
+class present(BaseModel):
+    o: int
+
+
 class OccupancyPoint(BaseModel):
     time: str
     occupancy: int
