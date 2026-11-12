@@ -1,6 +1,7 @@
 from datetime import datetime, timezone, time, timedelta
 from backend.data_structure import OccupancyStore, ForecastPoint
 from zoneinfo import ZoneInfo
+from sqlalchemy.dialects.postgresql import insert
 
 HKT = ZoneInfo("Asia/Hong_Kong")
 
@@ -12,6 +13,46 @@ def get_present_occupancy_data(db, Presentation):
     return {
         "o": o,
     }
+
+
+
+
+from sqlalchemy import insert
+
+def get_button_occupancy_data(db, Presentation):
+    print(">>> get_button_occupancy_data called")
+
+    row = (
+        db.query(Presentation)
+        .order_by(Presentation.id.desc())
+        .first()
+    )
+
+    old_id = row.id if row is not None else 0
+    o = old_id + 1
+
+    print(f">>> Before insert: latest_id={old_id}, next_id={o}")
+
+    try:
+        db.execute(insert(Presentation).values(id=o))
+        db.commit()
+
+        latest = (
+            db.query(Presentation)
+            .order_by(Presentation.id.desc())
+            .first()
+        )
+
+        print(f">>> After commit: latest_id={latest.id}")
+
+        return {"o": o}
+
+    except Exception:
+        db.rollback()
+        raise
+
+
+
 
 
 

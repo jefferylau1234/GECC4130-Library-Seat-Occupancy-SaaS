@@ -3,7 +3,7 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/occupancy", tags=["occupancy"])
 
 from backend.schemas.occupancy import OccupancyResponse, TodayOccupancyResponse, LastWeekOccupancyResponse, present
-from backend.services.occupancy_service import get_current_occupancy_data, get_today_occupancy_data, get_last_week_occupancy_data, get_present_occupancy_data
+from backend.services.occupancy_service import get_current_occupancy_data, get_today_occupancy_data, get_last_week_occupancy_data, get_present_occupancy_data, get_button_occupancy_data
 
 from ..db.db import get_db, OccupancyReading, Presentation
 from fastapi import APIRouter, Depends
@@ -18,6 +18,11 @@ def get_current_occupancy(db: Session = Depends(get_db)):
 @router.get("/present", response_model = present)
 def get_current_occupancy(db: Session = Depends(get_db)):
     return get_present_occupancy_data(db, Presentation)
+
+
+@router.get("/button", response_model = present)
+def get_current_occupancy(db: Session = Depends(get_db)):
+    return get_button_occupancy_data(db, Presentation)
 
 
 

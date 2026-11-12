@@ -126,3 +126,12 @@ async def present_page():
         FRONTEND_DIR / "present.html",
         media_type="text/html",
     )
+
+
+
+@app.get("/button", include_in_schema=False)
+async def button_page():
+    return FileResponse(
+        FRONTEND_DIR / "button.html",
+        media_type="text/html",
+    )
