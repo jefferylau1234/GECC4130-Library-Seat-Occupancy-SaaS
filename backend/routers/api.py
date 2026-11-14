@@ -266,7 +266,7 @@ def create_occupancy_reading(sensor: OccupancyPayload, background_tasks: Backgro
     if forecast_comparison["available"]:
         predicted_occupancy = forecast_comparison["predicted_occupancy"]
 
-        if abs(sensor_occupancy - predicted_occupancy) > 10 and now.minute == 59:
+        if abs(sensor_occupancy - predicted_occupancy) > 10 and now.minute == 30:
             current_occupancy = predicted_occupancy + 13
             occupancy_corrected = True
 
