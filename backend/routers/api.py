@@ -147,8 +147,9 @@ print(hour_str)
 
 
 from fastapi import BackgroundTasks
-
 from backend.realtime import publish_occupancy
+from backend.services.forecast_comparison_service import compare_with_forecast
+
 
 
 # for sensors to pass occupancy data
@@ -247,11 +248,29 @@ def create_occupancy_reading(sensor: OccupancyPayload, background_tasks: Backgro
             i = f"+{j}" if j >= 0 else f"{j}"
 
 
+    current_occupancy = max(0, current_occupancy)
 
+    # Occupancy after processing this request's sensor signals.
+    sensor_occupancy = current_occupancy
 
+    forecast_comparison = compare_with_forecast(
+        current_occupancy=sensor_occupancy,
+        now=now,
+    )
 
+    occupancy_corrected = False
 
-    current_occupancy = 0 if current_occupancy < 0 else current_occupancy
+    if forecast_comparison["available"]:
+        predicted_occupancy = forecast_comparison["predicted_occupancy"]
+
+        if abs(sensor_occupancy - predicted_occupancy) > 10:
+            current_occupancy = predicted_occupancy
+            occupancy_corrected = True
+
+    # Positive: the correction added people.
+    # Negative: the correction removed people.
+    forecast_adjustment = current_occupancy - sensor_occupancy
+
 
 
 
@@ -331,6 +350,10 @@ def create_occupancy_reading(sensor: OccupancyPayload, background_tasks: Backgro
     return {
         "message": "Occupancy reading received",
         "current_occupancy": current_occupancy,
+        "sensor_occupancy": sensor_occupancy,
+        "occupancy_corrected": occupancy_corrected,
+        "forecast_adjustment": forecast_adjustment,
+        "forecast_comparison": forecast_comparison,
         "received_data": received_data,
         "occupancy": i,
         "received_at": now,
