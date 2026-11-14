@@ -163,6 +163,25 @@ def create_occupancy_reading(sensor: OccupancyPayload, background_tasks: Backgro
         print("CC library is still not opened yet")
         return {"message": "CC library is not opened yet",}
 
+
+    w = now.weekday()
+    t = now.time()
+
+
+    if w in (0, 1, 2, 3, 4) and not (time(8, 20) < t < time(22, 0)):
+        print("CC library is still not opened yet")
+        return {"message": "CC library is not opened yet",}
+    elif w == 5 and not (time(8, 20) < t < time(19, 0)):
+        print("CC library is still not opened yet")
+        return {"message": "CC library is not opened yet",}
+    elif w == 6 and not (time(11, 0) < t < time(19, 0)):
+        print("CC library is still not opened yet")
+        return {"message": "CC library is not opened yet",}
+
+
+
+
+
     hour_str = now.strftime("%Y-%m-%d_%H")
     row = db.query(OccupancyReading).filter(OccupancyReading.hour_str == hour_str).first()
 
